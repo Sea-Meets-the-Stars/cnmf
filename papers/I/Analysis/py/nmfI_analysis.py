@@ -9,6 +9,7 @@ import sklearn
 from ihop.iops import pca as ihop_pca
 
 from oceancolor.hydrolight import loisel23 
+from oceancolor.water import absorption 
 
 from cnmf.oceanography import iops
 from cnmf import nmf_imaging
@@ -32,7 +33,7 @@ def loisel23_components(iop:str, N_NMF:int=10,
     Perform NMF analysis on Loisel23 data.
 
     Args:
-        iop (str): The IOP dataset to use for analysis, e.g. 'a'
+        iop (str): The IOP dataset to use for analysis, e.g. 'a', 'aph'
         N_NMF (int, optional): The number of NMF components to extract. Defaults to 10.
         clobber (bool, optional): If True, overwrite existing output file. Defaults to False.
     """
@@ -50,14 +51,24 @@ def loisel23_components(iop:str, N_NMF:int=10,
 
     # Wavelengths, restricted to > 400 nm
     cut = (l23_ds.Lambda > min_wv) & (l23_ds.Lambda < high_cut)
-    l23_a = l23_ds.a.data[:,cut]
     wave = l23_ds.Lambda.data[cut]
-
     Rs = l23_ds.Rrs.data[:,cut]
+    
+    # Grab the IOP
+    if iop == 'a':
+        l23_iop = l23_ds.a.data[:,cut]
+        nspec = l23_iop.shape[0]
+        a_w = absorption.a_water(wave, data='IOCCG')
+        l23_iop = l23_iop - np.outer(np.ones(nspec), a_w)
+    elif iop == 'bb':
+        l23_iop = l23_ds.bb.data[:,cut]
+    elif iop == 'aph':
+        l23_iop = l23_ds.aph.data[:,cut]
+    else:
+        raise ValueError(f"Unknown IOP: {iop}")
 
     # Prep
-    spec_nw, mask, err = iops.prep(
-        l23_a, wave, remove_water=True)
+    spec_nw, mask, err = iops.prep(l23_iop)
 
     # Do it
     comps = nmf_imaging.NMFcomponents(
@@ -201,13 +212,14 @@ if __name__ == '__main__':
 
 
 
-    '''
     # NMF on L23
     #for n in [3]:
     for n in range(1,10):
-        loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
-        loisel23_components('bb', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+        #loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+        #loisel23_components('bb', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+        loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
 
+    '''
     # PCA on L23
     pca_path = os.path.join(resources.files('cnmf'),
                             'data', 'L23')
