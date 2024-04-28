@@ -223,7 +223,7 @@ def fig_l23_pca_nmf_var(
 
 def fig_nmf_pca_basis(outfile:str='fig_nmf_pca_basis.png',
                  nmf_fit:str='L23', Ncomp:int=4,
-                 norm:bool=False):
+                 norm:bool=False, iop:str='a'):
 
     # Seaborn
     sns.set(style="whitegrid",
@@ -242,11 +242,11 @@ def fig_nmf_pca_basis(outfile:str='fig_nmf_pca_basis.png',
 
         # load
         if ss == 0:
-            ab, Rs, d, d_bb = ihop_pca.load_loisel_2023_pca(N_PCA=Ncomp,
-                                l23_path=pca_path)
+            ab, Rs, d, d_bb = ihop_pca.load_loisel_2023_pca(
+                N_PCA=Ncomp, l23_path=pca_path)
             wave = d['wavelength']
         elif ss == 1:
-            d = cnmf_io.load_nmf(nmf_fit, Ncomp, 'a')
+            d = cnmf_io.load_nmf(nmf_fit, Ncomp, iop)
             wave = d['wave']
         M = d['M']
         #embed(header='fig_nmf_pca_basis 376')
@@ -1465,8 +1465,10 @@ def main(flg):
     # L23: PCA and NMF basis functions
     if flg & (2**2):
         #fig_nmf_pca_basis()
-        fig_nmf_pca_basis(Ncomp=3,
-                          outfile='fig_nmf_pca_basis_N3.png')
+        #fig_nmf_pca_basis(Ncomp=3,
+        #                  outfile='fig_nmf_pca_basis_N3.png')
+        fig_nmf_pca_basis(outfile='fig_nmf_pca_basis_aph.png',
+                          iop='aph', Ncomp=4)
 
     # L23: Fit NMF 1, 2
     if flg & (2**3):  # 8
