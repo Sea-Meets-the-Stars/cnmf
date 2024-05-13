@@ -223,7 +223,8 @@ def fig_l23_pca_nmf_var(
 
 def fig_nmf_pca_basis(outfile:str='fig_nmf_pca_basis.png',
                  nmf_fit:str='L23', Ncomp:int=4,
-                 norm:bool=False, iop:str='a'):
+                 norm:bool=False, iop:str='a',
+                 skip_pca:bool=False):
 
     # Seaborn
     sns.set(style="whitegrid",
@@ -239,6 +240,8 @@ def fig_nmf_pca_basis(outfile:str='fig_nmf_pca_basis.png',
 
     # a, bb
     for ss, itype in zip([0,1], ['PCA', 'NMF']):
+        if skip_pca and ss == 0:
+            continue
 
         # load
         if ss == 0:
@@ -1153,6 +1156,62 @@ def fig_H1_vs_adg(outfile:str='fig_H1_vs_adg.png',
     print(f"Saved: {outfile}")
 
 
+def fig_H3_vs_adg(outfile:str='fig_H3_vs_adg.png',
+                 nmf_fit:str='L23', N_NMF:int=4):
+
+    # RMSE
+    rmss = []
+    # load
+    d = cnmf_io.load_nmf(nmf_fit, N_NMF, 'a')
+    M = d['M']
+    wave = d['wave']
+    coeff = d['coeff']
+    #L23_NMF_CDOM = coeff[:,0]
+    L23_NMF_H3 = coeff[:,2]
+
+    ds = loisel23.load_ds(4,0)
+    L23_wave = ds.Lambda.data
+    i400 = np.argmin(np.abs(L23_wave-405.))
+    i500 = np.argmin(np.abs(L23_wave-500.))
+    L23_gd =  ds.ag.data + ds.ad.data
+    L23_gd_400 =  ds.ag[:,i400].data + ds.ad[:,i400].data
+    L23_dtog_400 =  ds.ad[:,i400].data/ds.ag[:,i400].data
+    L23_gd_500_400 = L23_gd[:,i500]/L23_gd[:,i400].data 
+    L23_g_500_400 = ds.ag[:,i500].data/ds.ag[:,i400].data 
+
+    # Minimum
+    L23_NMF_H3 = np.maximum(L23_NMF_H3, 1e-3)
+
+
+
+    fig = plt.figure(figsize=(6,6))
+    plt.clf()
+    ax = plt.gca()
+
+    ax = sns.histplot(x=L23_NMF_H3, 
+                      #y=L23_dtog_400,
+                      y=L23_gd_500_400, 
+                      #y=L23_g_500_400, 
+                      log_scale=True)
+    #
+    ax.set_xlabel(r'$H_3^{\rm L23}$')
+    ax.set_ylabel(r'$a_{\rm dg}^{\rm L23}(500\,{\rm nm})/a_{\rm dg}^{\rm L23}(405\,{\rm nm})$')
+
+    # Add grid
+    ax.grid(True)
+
+    #ax.legend()
+
+    #ax.set_yscale('log')
+    
+    # axes
+    plotting.set_fontsize(ax, 15)
+
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
+
 def fig_H24_vs_aph(outfile:str='fig_H24_vs_aph.png',
                  nmf_fit:str='L23', N_NMF:int=4):
 
@@ -1468,7 +1527,8 @@ def main(flg):
         #fig_nmf_pca_basis(Ncomp=3,
         #                  outfile='fig_nmf_pca_basis_N3.png')
         fig_nmf_pca_basis(outfile='fig_nmf_pca_basis_aph.png',
-                          iop='aph', Ncomp=4)
+                          iop='aph', Ncomp=3,
+                          skip_pca=True)
 
     # L23: Fit NMF 1, 2
     if flg & (2**3):  # 8
@@ -1484,7 +1544,7 @@ def main(flg):
 
     # Compare the NMF bases
     if flg & (2**5): # 32
-        fig_l23_vs_tara_M()
+        fig_l23_vs_tara_M(N_NMF=3)
         #fig_l23_vs_tara_M(outfile='fig_l23_vs_tara_M_N3.png',
         #    N_NMF=3)
 
@@ -1569,6 +1629,10 @@ def main(flg):
     if flg & (2**23):
         fig_tara_outliers()
 
+    # H1 vs adg
+    if flg & (2**24):
+        fig_H3_vs_adg()
+        #fig_a_corner(nmf_fit='Tara')
 
 # Command line execution
 if __name__ == '__main__':
@@ -1592,7 +1656,7 @@ if __name__ == '__main__':
         #flg += 2 ** 4  # 16 -- Fit CDOM
         #flg += 2 ** 5  # 32 -- 
         
-        flg += 2 ** 12  # L23 Indiv
+        #flg += 2 ** 12  # L23 Indiv
         #flg += 2 ** 13  # Tara Indiv
         #flg += 2 ** 14  # L23/Tara H coefficients in a Corner plot
 
@@ -1600,12 +1664,14 @@ if __name__ == '__main__':
         #flg += 2 ** 16  # Variance per mode (PCA)
         #flg += 2 ** 17  # L23 H coefficients + ad/ag in a Corner plot
         #flg += 2 ** 18  # Explore Tara geographic distribution
-        #flg += 2 ** 19  # L23 aph vs H2+H4
+        flg += 2 ** 19  # L23 aph vs H2+H4
         #flg += 2 ** 20  # Fit W2 
         #flg += 2 ** 21  # Fit W4 
 
         #flg += 2 ** 22  # Tara Chl-a
-        flg += 2 ** 23  # Tara Chl-a outliers
+        #flg += 2 ** 23  # Tara Chl-a outliers
+        #flg += 2 ** 24  # Tara Chl-a outliers
+
     else:
         flg = sys.argv[1]
 
