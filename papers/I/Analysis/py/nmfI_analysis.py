@@ -89,13 +89,14 @@ def loisel23_components(iop:str, N_NMF:int=10,
     print(f'Wrote: {outfile}')
 
 def l23_on_tara(sig:float=0.0005,
-                    cut:int=None,
+                    cut:int=None, skip_save:bool=False,
                     decomp:str='NMF'):
     """ Perform NMF analysis on Tara data, using the L23 fit as a basis.
 
     Args:
         sig (float, optional): _description_. Defaults to 0.0005.
         cut (int, optional): Cut on the number of spectra. Defaults to None.
+        skip_save (bool, optional): Skip saving the output. Defaults to False.
     """
 
     # Load L23 fit
@@ -159,15 +160,24 @@ def l23_on_tara(sig:float=0.0005,
     else:
         raise ValueError(f"Unknown decomp: {decomp}")
 
+    # Variance 
+    X = final_tara
+    X_est = np.dot(save_M.T, save_coeff).T
+    V_true = np.sum(np.std(X, axis=0)**2)
+    V_est = np.sum(np.std(X-X_est, axis=0)**2)
+
+    evar = 1 - V_est/V_true
+
     # Save
-    cnmf_io.save_nmf(outfile, save_M, save_coeff, final_tara,
+    if not skip_save:
+        cnmf_io.save_nmf(outfile, save_M, save_coeff, final_tara,
                      None, V, wv_grid, None,
                      UID=tara_UIDs)
 
 def tara_components(iop:str='a', N_NMF:int=10, clobber:bool=False,
         seed:int=12345):
     """
-    Perform NMF analysis on Loisel23 data.
+    Perform NMF analysis on Tara data.
 
     Args:
         iop (str): The IOP dataset to use for analysis, e.g. 'a'
@@ -236,10 +246,12 @@ if __name__ == '__main__':
 
     # L23 PCA on Tara
     l23_on_tara(decomp='PCA')
+    '''
 
     # L23 NMF on Tara
-    l23_on_tara()#cut=40000)
+    l23_on_tara(skip_save=True)#cut=40000)
 
+    '''
     # NMF on Tara alone
     for n in [3,4]:
         # Do it

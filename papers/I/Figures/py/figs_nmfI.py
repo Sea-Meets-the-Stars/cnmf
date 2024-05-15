@@ -838,7 +838,7 @@ def fig_l23_vs_tara_M(
     for ss in range(N_NMF):
     # Plot the Ms
         ax = plt.subplot(gs[ss])
-        ax.plot(wave_l23, M_l23[ss], label=r'L23: $W_'+f'{ss+1}'+'$', ls=':')
+        ax.plot(wave_l23, M_l23[ss], label=r'L23: $W_'+f'{ss+1}'+'$')#, ls=':')
         ax.plot(wave_tara, M_tara[ss], label=r'Tara: $W_'+f'{ss+1}'+'$')
 
         # Axes
@@ -1507,6 +1507,93 @@ def fig_tara_outliers():
     plt.savefig(outfile, dpi=300)
     print(f"Saved: {outfile}")
 
+
+def fig_fit_W1(N_NMF:int=4,
+               icdom:int=0, # 0-indexing
+                 outfile:str='fig_fit_W1.png',
+                 cdom_max:float=530.):
+    """
+    Generate a figure showing the fits of CDOM and chlorophyll using NMF.
+
+    Args:
+        nmf_fit (str): The type of NMF fit to use. Default is 'L23'.
+        N_NMF (int): The number of NMF components. Default is 4.
+        icdom (int): The index of the CDOM component to plot. Default is 1.
+        outfile (str): The output file name for the figure. If not provided, a default name will be used based on the nmf_fit parameter. Default is None.
+        cdom_max (float, optional): The maximum wavelength for the CDOM fit. Default is 600.0.
+    """
+
+    fig = plt.figure(figsize=(8,8))
+    gs = gridspec.GridSpec(2,1)
+
+    axes = []
+    clrs = ['b', 'orange']
+    for ss, dataset in enumerate(['L23', 'Tara']):
+
+        # Load
+        d = cnmf_io.load_nmf(dataset, N_NMF, 'a')
+        M = d['M']
+        wave = d['wave']
+        a_cdom = M[icdom]
+
+        # #########################################################
+        # CDOM
+        wv_cut = wave <= cdom_max
+        cut_wv = wave[wv_cut]
+
+        # Fit exponentials
+        exp_tot_coeff, cov = cdom.fit_exp_tot(
+            wave[wv_cut], a_cdom[wv_cut])
+        a_cdom_totexp_fit = exp_tot_coeff[0] * cdom.a_exp(
+            wave[wv_cut], S_CDOM=exp_tot_coeff[1])
+            #wave0=exp_tot_coeff[2])
+        print(f'Tot exp coeff: {exp_tot_coeff}')
+        exp_norm_coeff, cov = cdom.fit_exp_norm(wave[wv_cut], 
+                                                a_cdom[wv_cut])
+        a_cdom_exp_fit = exp_norm_coeff[0] * cdom.a_exp(wave[wv_cut])
+
+        # Fit power-law
+        pow_coeff, pow_cov = cdom.fit_pow(cut_wv, a_cdom[wv_cut])
+        a_cdom_pow_fit = pow_coeff[0] * cdom.a_pow(cut_wv, S=pow_coeff[1])
+
+        # Plot
+        # Plot CDOM fits
+        ax_cdom = plt.subplot(gs[ss])
+
+        # NMF
+        ax_cdom.step(wave, M[icdom], 
+                    label=f'{dataset}: '+r'$W_'+f'{icdom+1}'+'$', 
+                    color=clrs[ss],
+                    lw=2)
+
+        #ax_cdom.plot(cut_wv, a_cdom_exp_fit, 
+        #        color='b', label='CDOM exp', ls='-')
+        ax_cdom.plot(cut_wv, a_cdom_totexp_fit, 
+                color='k', 
+                label=r'Exponential ($S='+f'{exp_tot_coeff[1]:0.3f}'+r'$)', 
+                ls='--', lw=2)
+        ax_cdom.plot(cut_wv, a_cdom_pow_fit, 
+                color='k', label='Power Law '+r'($\alpha='+f'{pow_coeff[1]:0.1f}'+r'$)', 
+                ls=':', lw=2)
+
+        ax_cdom.axvline(cdom_max, ls='--', color='gray')
+        axes.append(ax_cdom)
+
+    # Finish
+    for ax in axes:
+        plotting.set_fontsize(ax, 16)
+        # Label the axes
+        ax.set_xlabel('Wavelength (nm)')
+        ax.set_ylabel(r'$W_1$ Basis Function')
+        ax.legend(fontsize=15.)
+        # Grid
+        ax.grid(True)
+        ax.set_xlim(400., 650.)
+
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
 def main(flg):
     if flg== 'all':
         flg= np.sum(np.array([2 ** ii for ii in range(25)]))
@@ -1544,7 +1631,8 @@ def main(flg):
 
     # Compare the NMF bases
     if flg & (2**5): # 32
-        fig_l23_vs_tara_M(N_NMF=3)
+        fig_l23_vs_tara_M()
+        #fig_l23_vs_tara_M(N_NMF=3)
         #fig_l23_vs_tara_M(outfile='fig_l23_vs_tara_M_N3.png',
         #    N_NMF=3)
 
@@ -1633,6 +1721,11 @@ def main(flg):
     if flg & (2**24):
         fig_H3_vs_adg()
         #fig_a_corner(nmf_fit='Tara')
+    
+    # H1 vs adg
+    if flg & (2**25):
+        fig_fit_W1()
+        #fig_a_corner(nmf_fit='Tara')
 
 # Command line execution
 if __name__ == '__main__':
@@ -1649,12 +1742,6 @@ if __name__ == '__main__':
 
         #flg += 2 ** 6  # 64 -- Fit l23 basis functions
 
-        #flg += 2 ** 0  # 1 -- RMSE
-
-        #flg += 2 ** 2  # 4 -- Indiv
-        #flg += 2 ** 3  # 8 -- Coeff
-        #flg += 2 ** 4  # 16 -- Fit CDOM
-        #flg += 2 ** 5  # 32 -- 
         
         #flg += 2 ** 12  # L23 Indiv
         #flg += 2 ** 13  # Tara Indiv
@@ -1664,13 +1751,14 @@ if __name__ == '__main__':
         #flg += 2 ** 16  # Variance per mode (PCA)
         #flg += 2 ** 17  # L23 H coefficients + ad/ag in a Corner plot
         #flg += 2 ** 18  # Explore Tara geographic distribution
-        flg += 2 ** 19  # L23 aph vs H2+H4
+        #flg += 2 ** 19  # L23 aph vs H2+H4
         #flg += 2 ** 20  # Fit W2 
         #flg += 2 ** 21  # Fit W4 
 
         #flg += 2 ** 22  # Tara Chl-a
         #flg += 2 ** 23  # Tara Chl-a outliers
         #flg += 2 ** 24  # Tara Chl-a outliers
+        flg += 2 ** 25  # Fit to W1
 
     else:
         flg = sys.argv[1]
