@@ -6,6 +6,7 @@ from importlib import resources
 import numpy as np
 from scipy.interpolate import interp1d 
 from scipy.optimize import curve_fit
+from scipy import stats
 
 import seaborn as sns
 import pandas
@@ -1195,6 +1196,11 @@ def fig_H3_vs_adg(outfile:str='fig_H3_vs_adg.png',
                       y=L23_gd_500_400, 
                       #y=L23_g_500_400, 
                       log_scale=True)
+    #hb = ax.hexbin(L23_NMF_H3, L23_gd_500_400,
+    #               gridsize=100, #bins='log', 
+    #               xscale='log', yscale='log',
+    #                cmap='Blues')
+
     #
     ax.set_xlabel(r'$H_3^{\rm L23}$')
     ax.set_ylabel(r'$a_{\rm dg}^{\rm L23}(500\,{\rm nm})/a_{\rm dg}^{\rm L23}(405\,{\rm nm})$')
@@ -1202,12 +1208,14 @@ def fig_H3_vs_adg(outfile:str='fig_H3_vs_adg.png',
     # Add grid
     ax.grid(True)
 
-    #ax.legend()
-
-    #ax.set_yscale('log')
-    
     # axes
     plotting.set_fontsize(ax, 15)
+
+    # Stats
+
+    # rank correlation test
+    tau, p_value = stats.kendalltau(L23_NMF_H3, L23_gd_500_400)
+    embed(header='1218 of figs_nmfI.py')
 
     if skip_save:
         return
@@ -1217,10 +1225,9 @@ def fig_H3_vs_adg(outfile:str='fig_H3_vs_adg.png',
 
 
 def fig_H24_vs_aph(outfile:str='fig_H24_vs_aph.png',
-                 nmf_fit:str='L23', N_NMF:int=4):
+                 nmf_fit:str='L23', N_NMF:int=4,
+                 ax=None, save_fig:bool=True):
 
-    # RMSE
-    rmss = []
     # load
     d = cnmf_io.load_nmf(nmf_fit, N_NMF, 'a')
     M = d['M']
@@ -1234,12 +1241,21 @@ def fig_H24_vs_aph(outfile:str='fig_H24_vs_aph.png',
     L23_ph =  ds.aph[:,i440].data 
 
 
-    fig = plt.figure(figsize=(6,6))
-    plt.clf()
-    ax = plt.gca()
+    if ax is None:
+        fig = plt.figure(figsize=(6,6))
+        plt.clf()
+        ax = plt.gca()
 
-    ax = sns.histplot(x=L23_H_ph, y=L23_ph, log_scale=True)
+    hb = ax.hexbin(L23_H_ph, L23_ph,
+                   gridsize=100, bins='log', 
+                   xscale='log', yscale='log',
+                    cmap='Blues')
     #
+    cb = plt.colorbar(hb, ax=ax, label='counts')
+    ax.set_xlabel(r'$H_{2}^{\rm Tara}$')
+    ax.set_ylabel('Tara Chl Lineheight')
+
+    plotting.set_fontsize(ax, 14)
     ax.set_xlabel(r'$H_2^{\rm L23} + H_4^{\rm L23}$')
     ax.set_ylabel(r'$a_{\rm ph}^{\rm L23}(440\,{\rm nm})$')
 
@@ -1252,6 +1268,9 @@ def fig_H24_vs_aph(outfile:str='fig_H24_vs_aph.png',
     
     # axes
     plotting.set_fontsize(ax, 15)
+
+    if not save_fig:
+        return
 
     plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
     plt.savefig(outfile, dpi=300)
@@ -1373,7 +1392,8 @@ def fig_geo_tara(param:str, N_NMF:int=4, cmap:str='jet',
     plt.savefig(outfile, dpi=300)
     print(f"Saved: {outfile}")
 
-def fig_tara_chl_W(N_NMF:int=4): 
+def fig_tara_chl_W(N_NMF:int=4, ax=None,
+                   save_fig:bool=True): 
 
     outfile='fig_tara_chl_W.png'
 
@@ -1391,12 +1411,12 @@ def fig_tara_chl_W(N_NMF:int=4):
     midx = cat_utils.match_ids(d_tara['UID'], tara_db.uid.values)
     Tara_chlA = tara_db.Chl_lineheight.values[midx]
 
-    figsize=(8,6)
-    fig = plt.figure(figsize=figsize)
-    plt.clf()
-    gs = gridspec.GridSpec(1,1)
-
-    ax= plt.subplot(gs[0])
+    if ax is None:
+        figsize=(8,6)
+        fig = plt.figure(figsize=figsize)
+        plt.clf()
+        gs = gridspec.GridSpec(1,1)
+        ax= plt.subplot(gs[0])
 
     keep = (Tara_chlA > 0.01) & (NMF_chl > 0.01)
 
@@ -1405,28 +1425,20 @@ def fig_tara_chl_W(N_NMF:int=4):
                    xscale='log', yscale='log',
                     cmap='Greens')
     #ax.set(xlim=xlim, ylim=ylim)
-    cb = fig.colorbar(hb, ax=ax, label='counts')
+    cb = plt.colorbar(hb, ax=ax, label='counts')
     ax.set_xlabel(r'$H_{2}^{\rm Tara}$')
     ax.set_ylabel('Tara Chl Lineheight')
     plotting.set_fontsize(ax, 14)
 
+    ax.grid(True)
 
-    '''
-    jg = sns.jointplot(y=Tara_chlA[keep], 
-                     x=NMF_chl[keep], 
-                kind='hex', bins='log', # gridsize=250, #xscale='log',
-                xscale='log', yscale='log',
-                # mincnt=1,
-                cmap='Greens',
-                marginal_kws=dict(fill=False, color='black', 
-                                    bins=100)) 
+    # Stats
+    tau, p_value = stats.kendalltau(NMF_chl[keep], Tara_chlA[keep])
+    print(f'LH: Kendall tau: {tau} p-value: {p_value}')
 
-    plt.colorbar()
-    # Labels
-    jg.ax_joint.set_xlabel(r'$H_{2}^{\rm Tara}$')
-    jg.ax_joint.set_ylabel('Tara Chl Lineheight')
-    plotting.set_fontsize(jg.ax_joint, 14)
-    '''
+
+    if not save_fig:
+        return
 
     plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
     plt.savefig(outfile, dpi=300)
@@ -1485,6 +1497,124 @@ def fig_H3_combined(outfile='fig_H3_combined.png'):
     ax_dg = plt.subplot(gs[1])
 
     fig_H3_vs_adg(ax=ax_dg, skip_save=True)
+
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
+def fig_aph_vs_H(outfile='fig_aph_vs_H.png'):
+
+    # FIGURE
+    fig = plt.figure(figsize=(12,5))
+    gs = gridspec.GridSpec(1,2)
+
+    # Tara
+    ax_675 = plt.subplot(gs[0])
+    fig_tara_chl_W(ax=ax_675, save_fig=False)
+
+    # L23
+    ax_440 = plt.subplot(gs[1])
+    fig_H24_vs_aph(ax=ax_440, save_fig=False)
+
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
+def fig_fit_W24(outfile='fig_fit_W24.png',
+                 ichl:int=1, # 0-indexing
+                 N_NMF:int=4,
+                 chl_min:float=420.,
+                 add_gaussians:bool=False,
+                dataset='L23'):
+
+   # Load
+    d = cnmf_io.load_nmf(dataset, N_NMF, 'a')
+    M = d['M']
+    wave = d['wave']
+
+    # Gererate the profile
+    if dataset == 'L23':
+        #a_chl = np.sum(M[1:], axis=0)
+        dlbl = r'$W_2^{\rm L23} + W_4^{\rm L23}$'
+        a_chl = M[1] + M[3]#*1.25
+    else:
+        a_chl = M[ichl]
+        dlbl=f'{dataset}: '+r'$W_'+f'{ichl+1}'+'$'
+
+
+    chla = pigments.a_chl(wave, ctype='a')
+    chlb = pigments.a_chl(wave, ctype='b')
+    chlc = pigments.a_chl(wave, ctype='c12')
+    peri = pigments.a_chl(wave, pigment='Peri')
+    beta = pigments.a_chl(wave, pigment='beta-Car')
+    G584 = pigments.a_chl(wave, source='chase', pigment='G584')
+
+    gd1 = (wave > chl_min) & (wave < 550.)
+    gd2 = (wave > 640.) & (wave < 700.)
+    gd_wave2 = gd1 | gd2
+    if add_gaussians:
+        gd3 = (wave > 560.) & (wave < 620.)
+        gd_wave2 |= gd3
+
+    add_pigments=[peri[gd_wave2], beta[gd_wave2]]
+    if add_gaussians:
+        add_pigments += [G584[gd_wave2]]
+
+    # Fit
+    sigma = np.ones_like(wave[gd_wave2])*0.05
+    ans, cov = pigments.fit_a_chl(
+        wave[gd_wave2], a_chl[gd_wave2], 
+        add_pigments=add_pigments,
+        fit_type='positive', sigma=sigma)
+    print(f'Chl fit: {ans}')
+
+    all_pigments=[peri, beta]
+    if add_gaussians:
+        all_pigments += [G584]
+    def mk_model(*pargs):
+        # pargs[0] is not used
+        # Chl
+        a = pargs[0]*chla + pargs[1]*chlb + pargs[2]*chlc
+        # Others?
+        if all_pigments is not None:
+            for i, pigment in enumerate(all_pigments):
+                a += pargs[3+i]*pigment
+        # Return
+        return a
+    #embed(header='fig_fit_nmf 457')
+    new_model = mk_model(*ans)
+
+    fig = plt.figure(figsize=(9,5))
+    ax_chl = plt.gca()
+
+    ax_chl.plot(wave, a_chl, color='k', 
+                label=dlbl)
+    ax_chl.plot(wave[gd_wave2], new_model[gd_wave2], 'ro', 
+                label='model')
+    #https://www.allmovie.com/artist/akira-kurosawa-vn6780882/filmography
+
+    # Chl
+    for ss, pig, wv, lbl in zip(range(3), [chla,chlb,chlc], [673.,440.,440.], ['a', 'b', 'c12']):
+        #iwv = np.argmin(np.abs(wave-wv))
+        #nrm = pig[iwv]/M[0,iwv]
+        #print(f'nrm: {1/nrm}')
+        ax_chl.plot(wave, pig*ans[ss], label=f'Chl-{lbl}', ls=':')
+
+
+    # New ones
+    ax_chl.plot(wave, peri*ans[3], color='purple', label='Peri', ls=':')
+    ax_chl.plot(wave, beta*ans[4], color='orange', label=r'$\beta$-Car', ls=':')
+    if add_gaussians:
+        ax_chl.plot(wave, G584*ans[5], color='gray', label=r'Chl-c(585)', ls=':')
+
+
+    ax = ax_chl
+    plotting.set_fontsize(ax, 16)
+    # Label the axes
+    ax.set_xlabel('Wavelength (nm)')
+    ax.set_ylabel('NMF Basis')
+    ax.legend(fontsize=15.)
+    # Grid
 
     plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
     plt.savefig(outfile, dpi=300)
@@ -1635,7 +1765,7 @@ def fig_fit_W1(N_NMF:int=4,
                 label=r'Exponential ($S='+f'{exp_tot_coeff[1]:0.3f}'+r'$)', 
                 ls='--', lw=2)
         ax_cdom.plot(cut_wv, a_cdom_pow_fit, 
-                color='k', label='Power Law '+r'($\alpha='+f'{pow_coeff[1]:0.1f}'+r'$)', 
+                color='k', label='Power Law '+r'($\beta='+f'{-1*pow_coeff[1]:0.1f}'+r'$)', 
                 ls=':', lw=2)
 
         ax_cdom.axvline(cdom_max, ls='--', color='gray')
@@ -1704,9 +1834,17 @@ def main(flg):
     if flg & (2**6):
         fig_H1_vs_adg()
 
-    # H3 fig
+    # H3
     if flg & (2**7):
         fig_H3_combined()
+
+    # 
+    if flg & (2**8):
+        fig_aph_vs_H()
+
+    # 
+    if flg & (2**9):
+        fig_fit_W24()
 
 
     # L23: Fit NMF 1, 2
@@ -1723,9 +1861,9 @@ def main(flg):
 
     # Fit nmr
     if flg & (2**99): # 64
-        #fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.)
-        fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.,
-                    N_NMF=3, outfile='fig_l23_fit_nmf_N3.png')
+        fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.)
+        #fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.,
+        #            N_NMF=3, outfile='fig_l23_fit_nmf_N3.png')
         #fig_fit_nmf(nmf_fit='Tara', cdom_max=530.,
         #            icdom=0, ichl=1)
 
@@ -1813,6 +1951,8 @@ if __name__ == '__main__':
         #flg += 2 ** 5  # 32 -- Figure 6a: Fit to W1
         #flg += 2 ** 6  # 64 -- Figure 6b: L23 a_g + a_d
         #flg += 2 ** 7  # 128 -- Figure 7: H3
+        #flg += 2 ** 8  # 256 -- Figure 8: H2 and H24
+        #flg += 2 ** 9  # 512 -- Figure 9: Fit H2+H4
 
         #flg += 2 ** XX  # 64 -- Fit l23 basis functions
 
