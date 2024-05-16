@@ -1510,7 +1510,7 @@ def fig_tara_outliers():
 
 def fig_fit_W1(N_NMF:int=4,
                icdom:int=0, # 0-indexing
-                 outfile:str='fig_fit_W1.png',
+                 outfile:str='fig_W1_fits.png',
                  cdom_max:float=530.):
     """
     Generate a figure showing the fits of CDOM and chlorophyll using NMF.
