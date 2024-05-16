@@ -1562,7 +1562,7 @@ def fig_fit_W1(N_NMF:int=4,
 
         # NMF
         ax_cdom.step(wave, M[icdom], 
-                    label=f'{dataset}: '+r'$W_'+f'{icdom+1}'+'$', 
+                    label=r'$W_'+f'{icdom+1}'+r'^{\rm '+f'{dataset}'+r'}$', 
                     color=clrs[ss],
                     lw=2)
 
@@ -1578,17 +1578,22 @@ def fig_fit_W1(N_NMF:int=4,
 
         ax_cdom.axvline(cdom_max, ls='--', color='gray')
         axes.append(ax_cdom)
+        if ss == 0:
+            ax_cdom.tick_params(labelbottom=False)  # Hide x-axis labels
+        else:
+            ax_cdom.set_xlabel('Wavelength (nm)')
 
     # Finish
     for ax in axes:
-        plotting.set_fontsize(ax, 16)
+        plotting.set_fontsize(ax, 19)
         # Label the axes
-        ax.set_xlabel('Wavelength (nm)')
         ax.set_ylabel(r'$W_1$ Basis Function')
         ax.legend(fontsize=15.)
         # Grid
         ax.grid(True)
         ax.set_xlim(400., 650.)
+        # Minor ticks
+        ax.minorticks_on()
 
     plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
     plt.savefig(outfile, dpi=300)
@@ -1617,8 +1622,29 @@ def main(flg):
                           iop='aph', Ncomp=3,
                           skip_pca=True)
 
+    # Individual
+    if flg & (2**3):
+        #fig_nmf_indiv([100, 20000])
+        fig_nmf_indiv([100, 2000], nmf_fit='L23')
+
+    # Compare the NMF bases
+    if flg & (2**4): # 32
+        fig_l23_vs_tara_M()
+        #fig_l23_vs_tara_M(N_NMF=3)
+        #fig_l23_vs_tara_M(outfile='fig_l23_vs_tara_M_N3.png',
+        #    N_NMF=3)
+
+    # H1 vs adg
+    if flg & (2**5):
+        fig_fit_W1()
+
+    # H1 vs adg
+    if flg & (2**6):
+        fig_H1_vs_adg()
+
+
     # L23: Fit NMF 1, 2
-    if flg & (2**3):  # 8
+    if flg & (2**30):  # 8
         fig_fit_nmf()
         #fig_fit_nmf(nmf_fit='Tara')
         #fig_fit_nmf(outfile='fig_W3_l23_fit.png',
@@ -1626,18 +1652,11 @@ def main(flg):
         #fig_fit_nmf(nmf_fit='Tara', cdom_max=530.)
 
     # Coefficient distributions for L23 NMF
-    if flg & (2**4): # 16
+    if flg & (2**31): # 16
         fig_l23_tara_coeffs()
 
-    # Compare the NMF bases
-    if flg & (2**5): # 32
-        fig_l23_vs_tara_M()
-        #fig_l23_vs_tara_M(N_NMF=3)
-        #fig_l23_vs_tara_M(outfile='fig_l23_vs_tara_M_N3.png',
-        #    N_NMF=3)
-
     # Fit nmr
-    if flg & (2**6): # 64
+    if flg & (2**99): # 64
         #fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.)
         fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.,
                     N_NMF=3, outfile='fig_l23_fit_nmf_N3.png')
@@ -1650,10 +1669,6 @@ def main(flg):
         fig_nmf_basis()
         fig_nmf_basis(N_NMF=5)
 
-    # Individual
-    if flg & (2**12):
-        #fig_nmf_indiv([100, 20000])
-        fig_nmf_indiv([100, 2000], nmf_fit='L23')
 
     # Individual for Tara
     if flg & (2**13):
@@ -1672,11 +1687,6 @@ def main(flg):
     if flg & (2**27):
         fig_l23_tara_a_contours()
 
-
-    # H1 vs adg
-    if flg & (2**15):
-        fig_H1_vs_adg()
-        #fig_a_corner(nmf_fit='Tara')
 
     # Variance per mode
     if flg & (2**16):
@@ -1722,10 +1732,6 @@ def main(flg):
         fig_H3_vs_adg()
         #fig_a_corner(nmf_fit='Tara')
     
-    # H1 vs adg
-    if flg & (2**25):
-        fig_fit_W1()
-        #fig_a_corner(nmf_fit='Tara')
 
 # Command line execution
 if __name__ == '__main__':
@@ -1733,21 +1739,21 @@ if __name__ == '__main__':
 
     if len(sys.argv) == 1:
         flg = 0
-        #flg += 2 ** 0  # 1 -- Example spectra
-        #flg += 2 ** 1  # 2 -- L23: PCA vs NMF Explained variance
-        #flg += 2 ** 2  # 4 -- L23: PCA and NMF basis
-        #flg += 2 ** 3  # 8 -- L23: Fit NMF basis functions with CDOM, Chl
-        #flg += 2 ** 4  # 16 -- L23+Tara; W1, W2, W3, W4 coefficients
-        #flg += 2 ** 5  # 32 -- L23,Tara compare NMF basis functions
+        #flg += 2 ** 0  # 1 -- Figure 1 Example spectra
+        #flg += 2 ** 1  # 2 -- Figure 2 L23: PCA vs NMF Explained variance
+        #flg += 2 ** 2  # 4 -- Figure 3 L23: PCA and NMF basis
+        #flg += 2 ** 3  # 8 --  Figure 4: Example fits of L23
+        #flg += 2 ** 4  # 16 -- Figure 5: L23,Tara compare NMF basis functions
+        #flg += 2 ** 5  # 32 -- Figure 6a: Fit to W1
+        #flg += 2 ** 6  # 64 -- Figure 6b: L23 a_g + a_d
 
-        #flg += 2 ** 6  # 64 -- Fit l23 basis functions
+        #flg += 2 ** XX  # 64 -- Fit l23 basis functions
 
         
         #flg += 2 ** 12  # L23 Indiv
         #flg += 2 ** 13  # Tara Indiv
         #flg += 2 ** 14  # L23/Tara H coefficients in a Corner plot
 
-        #flg += 2 ** 15  # L23 a_g + a_d
         #flg += 2 ** 16  # Variance per mode (PCA)
         #flg += 2 ** 17  # L23 H coefficients + ad/ag in a Corner plot
         #flg += 2 ** 18  # Explore Tara geographic distribution
@@ -1758,7 +1764,9 @@ if __name__ == '__main__':
         #flg += 2 ** 22  # Tara Chl-a
         #flg += 2 ** 23  # Tara Chl-a outliers
         #flg += 2 ** 24  # Tara Chl-a outliers
-        flg += 2 ** 25  # Fit to W1
+
+        #flg += 2 ** 30  # 8 -- L23: Fit NMF basis functions with CDOM, Chl
+        #flg += 2 ** 31  # 16 -- L23+Tara; W1, W2, W3, W4 coefficients
 
     else:
         flg = sys.argv[1]
