@@ -1157,7 +1157,8 @@ def fig_H1_vs_adg(outfile:str='fig_H1_vs_adg.png',
 
 
 def fig_H3_vs_adg(outfile:str='fig_H3_vs_adg.png',
-                 nmf_fit:str='L23', N_NMF:int=4):
+                 nmf_fit:str='L23', N_NMF:int=4, 
+                 ax=None, skip_save:bool=False):
 
     # RMSE
     rmss = []
@@ -1184,9 +1185,10 @@ def fig_H3_vs_adg(outfile:str='fig_H3_vs_adg.png',
 
 
 
-    fig = plt.figure(figsize=(6,6))
-    plt.clf()
-    ax = plt.gca()
+    if ax is None:
+        fig = plt.figure(figsize=(6,6))
+        plt.clf()
+        ax = plt.gca()
 
     ax = sns.histplot(x=L23_NMF_H3, 
                       #y=L23_dtog_400,
@@ -1207,6 +1209,8 @@ def fig_H3_vs_adg(outfile:str='fig_H3_vs_adg.png',
     # axes
     plotting.set_fontsize(ax, 15)
 
+    if skip_save:
+        return
     plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
     plt.savefig(outfile, dpi=300)
     print(f"Saved: {outfile}")
@@ -1428,6 +1432,64 @@ def fig_tara_chl_W(N_NMF:int=4):
     plt.savefig(outfile, dpi=300)
     print(f"Saved: {outfile}")
 
+def fig_H3_combined(outfile='fig_H3_combined.png'):
+
+    # Load
+    nmf_fit = 'Tara'
+    N_NMF, iop = 4, 'a'
+    d = cnmf_io.load_nmf(nmf_fit, N_NMF, iop)
+    M = d['M']
+    coeff = d['coeff']
+    NMF_wave = d['wave']
+    tara_db = tara_io.load_pg_db(expedition='Microbiome')
+
+    NMF_chl = coeff[:,1] 
+
+    # Chl
+    midx = cat_utils.match_ids(d['UID'], tara_db.uid.values)
+    Tara_chlA = tara_db.Chl_lineheight.values[midx]
+
+    # High outliers
+    high_out = (NMF_chl > 2.) & (Tara_chlA < 0.5)
+    all_high = np.where(high_out)[0]
+    high_idx = all_high[0]
+
+    # FIGURE
+    fig = plt.figure(figsize=(12,6))
+    gs = gridspec.GridSpec(1,2)
+
+    # #############################################
+    ax_spec = plt.subplot(gs[0])
+
+    ax_spec.plot(d['wave'], d['spec'][high_idx])
+    model = np.zeros_like(d['wave'])
+    # Break it down
+    for ss in range(d['M'].shape[0]):
+        ax_spec.plot(d['wave'], d['M'][ss]*d['coeff'][high_idx][ss], 
+            label=r'$H_'+f'{ss+1}: {d["coeff"][high_idx][ss]:0.2f}'+'$', ls=':')
+        #
+        model += d['M'][ss]*d['coeff'][high_idx][ss]
+    ax_spec.plot(d['wave'], model, 'k:', label='Total')
+    ax_spec.legend(fontsize=14)
+    #
+    ax_spec.set_xlabel('Wavelength (nm)')
+    ax_spec.set_ylabel(r'$a_{\rm p}(\lambda) \; [\rm m^{-1}]$')
+
+    plotting.set_fontsize(ax_spec, 15)
+    #
+    #ax_spec.text(0.15, 0.90, r'(a) High $H_2$', color='k',
+    #    transform=ax_spec.transAxes,
+    #    fontsize=22, ha='left')
+
+    # #############################################
+    ax_dg = plt.subplot(gs[1])
+
+    fig_H3_vs_adg(ax=ax_dg, skip_save=True)
+
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
 def fig_tara_outliers():
 
     outfile = 'fig_tara_outliers.png'
@@ -1642,6 +1704,10 @@ def main(flg):
     if flg & (2**6):
         fig_H1_vs_adg()
 
+    # H3 fig
+    if flg & (2**7):
+        fig_H3_combined()
+
 
     # L23: Fit NMF 1, 2
     if flg & (2**30):  # 8
@@ -1746,6 +1812,7 @@ if __name__ == '__main__':
         #flg += 2 ** 4  # 16 -- Figure 5: L23,Tara compare NMF basis functions
         #flg += 2 ** 5  # 32 -- Figure 6a: Fit to W1
         #flg += 2 ** 6  # 64 -- Figure 6b: L23 a_g + a_d
+        #flg += 2 ** 7  # 128 -- Figure 7: H3
 
         #flg += 2 ** XX  # 64 -- Fit l23 basis functions
 
