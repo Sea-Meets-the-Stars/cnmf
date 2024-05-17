@@ -1791,6 +1791,75 @@ def fig_fit_W1(N_NMF:int=4,
     plt.savefig(outfile, dpi=300)
     print(f"Saved: {outfile}")
 
+
+def fig_outliers(items:list=[(2298, 'L23'),
+                           (105191, 'Tara'),
+                           (1245, 'L23'),
+                           (120863, 'Tara'),
+                           ], 
+                 N_NMF:int=4,
+                outfile=f'fig_outliers.png',
+                 seed=1234):
+
+    data = {}
+    for key in ['L23', 'Tara']:
+        # Load
+        data[key] = cnmf_io.load_nmf(key, N_NMF, 'a')
+        # Reconstruction
+        data[f'recon_{key}'] = np.dot(data[key]['coeff'], 
+                               data[key]['M'])
+
+    fig = plt.figure(figsize=(9,6))
+    plt.clf()
+    gs = gridspec.GridSpec(2,2)
+
+    for tt, item in enumerate(items):
+        idx, dataset = item
+        print(f'id: {idx}')
+
+        ax= plt.subplot(gs[tt])
+        d = data[dataset]
+        recon = data[f'recon_{dataset}']
+
+        ax.plot(d['wave'], d['spec'][idx], 'k', 
+                label=f'{dataset}: i={idx}')
+        #ax.plot(d['wave'], d['spec'][idx2], 'k', label='data2', ls='--')
+        lbl = 'model' if tt == 0 else None
+        ax.plot(d['wave'], recon[idx], label=lbl)
+
+        # Stats
+        dev = recon[idx] - d['spec'][idx]
+        rel_dev = np.abs(dev) / d['spec'][idx]
+        max_dev = np.max(np.abs(dev))
+        irel = np.argmax(rel_dev)
+
+        print(f'max_dev: {max_dev}')
+        print(f'max_reldev: {rel_dev.max()} at {d["wave"][irel]}')
+
+        # Break it down
+        for ss in range(d['M'].shape[0]):
+            ax.plot(d['wave'], d['M'][ss]*d['coeff'][idx][ss], 
+                    label=r'$H_'+f'{ss+1}: {d["coeff"][idx][ss]:0.2f}'+'$', ls=':')
+
+        if dataset == 'Tara':
+            ax.set_ylabel(r'$a_{\rm p} \; ({\rm m}^{-1})$')
+        else:
+            ax.set_ylabel(r'$a_{\rm nw}$ (m$^{-1}$)')
+        ax.legend(fontsize=9)
+        plotting.set_fontsize(ax, 15)
+
+        # Grid
+        ax.grid(True)
+        if tt<2: 
+            ax.tick_params(labelbottom=False)  # Hide x-axis labels
+        else:
+            ax.set_xlabel('Wavelength (nm)')
+
+    # Finish
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
 def main(flg):
     if flg== 'all':
         flg= np.sum(np.array([2 ** ii for ii in range(25)]))
@@ -1846,6 +1915,10 @@ def main(flg):
     if flg & (2**9):
         fig_fit_W24()
 
+    # Outliers
+    if flg & (2**11):
+        fig_outliers()
+
 
     # L23: Fit NMF 1, 2
     if flg & (2**30):  # 8
@@ -1867,9 +1940,8 @@ def main(flg):
         #fig_fit_nmf(nmf_fit='Tara', cdom_max=530.,
         #            icdom=0, ichl=1)
 
-
     # NMF basis
-    if flg & (2**11):
+    if flg & (2**51):
         fig_nmf_basis()
         fig_nmf_basis(N_NMF=5)
 
@@ -1953,6 +2025,8 @@ if __name__ == '__main__':
         #flg += 2 ** 7  # 128 -- Figure 7: H3
         #flg += 2 ** 8  # 256 -- Figure 8: H2 and H24
         #flg += 2 ** 9  # 512 -- Figure 9: Fit H2+H4
+
+        #flg += 2 ** 11  # 2048 -- Figure 11: Outliers
 
         #flg += 2 ** XX  # 64 -- Fit l23 basis functions
 
