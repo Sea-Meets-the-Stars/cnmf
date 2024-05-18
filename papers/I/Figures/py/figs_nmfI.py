@@ -1793,9 +1793,9 @@ def fig_fit_W1(N_NMF:int=4,
 
 
 def fig_outliers(items:list=[(2298, 'L23'),
-                           (105191, 'Tara'),
-                           (1245, 'L23'),
                            (120863, 'Tara'),
+                           (1245, 'L23'),
+                           (105191, 'Tara'),
                            ], 
                  N_NMF:int=4,
                 outfile=f'fig_outliers.png',
@@ -1920,32 +1920,6 @@ def main(flg):
         fig_outliers()
 
 
-    # L23: Fit NMF 1, 2
-    if flg & (2**30):  # 8
-        fig_fit_nmf()
-        #fig_fit_nmf(nmf_fit='Tara')
-        #fig_fit_nmf(outfile='fig_W3_l23_fit.png',
-        #            icdom=2, cdom_max=550.)
-        #fig_fit_nmf(nmf_fit='Tara', cdom_max=530.)
-
-    # Coefficient distributions for L23 NMF
-    if flg & (2**31): # 16
-        fig_l23_tara_coeffs()
-
-    # Fit nmr
-    if flg & (2**99): # 64
-        fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.)
-        #fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.,
-        #            N_NMF=3, outfile='fig_l23_fit_nmf_N3.png')
-        #fig_fit_nmf(nmf_fit='Tara', cdom_max=530.,
-        #            icdom=0, ichl=1)
-
-    # NMF basis
-    if flg & (2**51):
-        fig_nmf_basis()
-        fig_nmf_basis(N_NMF=5)
-
-
     # Individual for Tara
     if flg & (2**13):
         fig_nmf_indiv(12, nmf_fit='Tara')
@@ -1956,7 +1930,7 @@ def main(flg):
         fig_a_corner(dataset='Tara')
 
     # NMF RMSE
-    if flg & (2**10):
+    if flg & (2**40):
         fig_nmf_rmse()
 
     # L23: a1, z2 contours
@@ -2008,6 +1982,33 @@ def main(flg):
         fig_H3_vs_adg()
         #fig_a_corner(nmf_fit='Tara')
     
+
+
+    # L23: Fit NMF 1, 2
+    if flg & (2**30):  # 8
+        fig_fit_nmf()
+        #fig_fit_nmf(nmf_fit='Tara')
+        #fig_fit_nmf(outfile='fig_W3_l23_fit.png',
+        #            icdom=2, cdom_max=550.)
+        #fig_fit_nmf(nmf_fit='Tara', cdom_max=530.)
+
+    # Coefficient distributions for L23 NMF
+    if flg & (2**31): # 16
+        fig_l23_tara_coeffs()
+
+    # Fit nmr
+    if flg & (2**99): # 64
+        fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.)
+        #fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.,
+        #            N_NMF=3, outfile='fig_l23_fit_nmf_N3.png')
+        #fig_fit_nmf(nmf_fit='Tara', cdom_max=530.,
+        #            icdom=0, ichl=1)
+
+    # NMF basis
+    if flg & (2**51):
+        fig_nmf_basis()
+        fig_nmf_basis(N_NMF=5)
+
 
 # Command line execution
 if __name__ == '__main__':
