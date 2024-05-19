@@ -124,6 +124,7 @@ def l23_on_tara(sig:float=0.0005,
     V = np.ones_like(final_tara) / sig**2
     M_tara = M[:,i0:i1+1]
 
+    embed(header='127 of nmfI_analysis')
     if decomp == 'NMF':
         # Build it up one component at a time
         H_tmp = None
