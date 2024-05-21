@@ -287,7 +287,8 @@ def fit_rmse_aph():
     
     # Write to disk
     outfile = 'L23_aph_fits.npz'
-    np.savez(outfile, sv_chla=sv_chla, b_rmses=b_rmses, nmf_rmses=nmf_rmses)
+    np.savez(outfile, sv_chla=sv_chla, b_rmses=b_rmses, nmf_rmses=nmf_rmses,
+             aph_440=aph_440)
     print(f"Wrote: {outfile}")
 
 if __name__ == '__main__':

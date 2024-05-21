@@ -1860,6 +1860,45 @@ def fig_outliers(items:list=[(2298, 'L23'),
     plt.savefig(outfile, dpi=300)
     print(f"Saved: {outfile}")
 
+def fig_bricaud_rmse():
+
+    outfile = 'fig_bricaud_rmse.png'
+
+    # Load
+    bricaud = np.load('../Analysis/L23_aph_fits.npz')
+
+    #df = pandas.DataFrame(bricaud)
+
+    fig = plt.figure(figsize=(7,7))
+    gs = gridspec.GridSpec(1,1)
+
+
+    ax = plt.subplot(gs[0])
+
+    # Scatter me
+    sz = 1.
+    ax.scatter(bricaud['aph_440'], bricaud['b_rmses'], label='Bricaud', s=sz)
+    ax.scatter(bricaud['aph_440'], bricaud['nmf_rmses'], label='NMF', s=sz)
+
+    #ax.scatter(bricaud['nmf_rmses'], bricaud['b_rmses'])#, label='NMF')
+    #ax.plot([1e-5, 1e-1], [1e-5,1e-1], 'k--')
+    #ax.plot([1e-5, 1e-1], [3e-5,3e-1], 'k:')
+
+    ax.set_xlabel(r'$a_{\rm ph}(440\,{\rm nm})$')
+    ax.set_ylabel('RMSE')
+
+    # Log on x-axis
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+
+
+    ax.legend()
+
+    # Finish
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
 def main(flg):
     if flg== 'all':
         flg= np.sum(np.array([2 ** ii for ii in range(25)]))
@@ -1996,6 +2035,11 @@ def main(flg):
     if flg & (2**31): # 16
         fig_l23_tara_coeffs()
 
+    # Bricaud RMSE
+    if flg & (2**32): # 16
+        fig_bricaud_rmse()
+
+
     # Fit nmr
     if flg & (2**99): # 64
         fig_fit_nmf(icdom=0, ichl=1, cdom_max=530.)
@@ -2049,6 +2093,8 @@ if __name__ == '__main__':
 
         #flg += 2 ** 30  # 8 -- L23: Fit NMF basis functions with CDOM, Chl
         #flg += 2 ** 31  # 16 -- L23+Tara; W1, W2, W3, W4 coefficients
+
+        flg += 2 ** 32  # 16 -- Bricaud
 
     else:
         flg = sys.argv[1]
