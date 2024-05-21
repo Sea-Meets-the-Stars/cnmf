@@ -6,10 +6,15 @@ from importlib import resources
 
 import sklearn
 
+from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
+
 from ihop.iops import pca as ihop_pca
 
 from oceancolor.hydrolight import loisel23 
 from oceancolor.water import absorption 
+from oceancolor.ph import absorption as ph_absorption
+
 
 from cnmf.oceanography import iops
 from cnmf import nmf_imaging
@@ -219,10 +224,77 @@ def tara_components(iop:str='a', N_NMF:int=10, clobber:bool=False,
 
     print(f'Wrote: {outfile}')
 
+def fit_rmse_aph():
+
+    # Load NMF
+    nmf_fit = 'L23'
+    N_NMF, iop = 2, 'aph'
+    d = cnmf_io.load_nmf(nmf_fit, N_NMF, iop)
+    M = d['M']
+    coeff = d['coeff']
+    NMF_wave = d['wave']
+
+    # Reconstruct
+    NMF_aph = np.dot(coeff, M)
+
+
+    # Load L23 and unpack
+    ds = loisel23.load_ds(4,0)
+    wave = ds.Lambda.data
+    aph = ds.aph.data
+
+    # Load Bricaud
+    b1998 = ph_absorption.load_bricaud1998()
+    keep = (wave >= 410.) & (wave <= b1998['lambda'].max())
+    fit_wave = wave[keep]
+
+    # Interpolate
+    f_b1998_A = interp1d(b1998['lambda'], b1998.Aphi)
+    f_b1998_E = interp1d(b1998['lambda'], b1998.Ephi)
+
+    # Apply
+    L23_A = f_b1998_A(fit_wave)
+    L23_E = f_b1998_E(fit_wave)
+
+    # func to fit
+    def func(x, Chl):
+        b_aph = L23_A * Chl**(L23_E)
+        return b_aph
+
+    # Fit
+    sv_chla = []
+    b_rmses = []
+    nmf_rmses = []
+    aph_440 = []
+    sigma = np.ones(fit_wave.size)*0.005
+
+    i_440 = np.argmin(np.abs(fit_wave-440.))
+
+    for idx in range(aph.shape[0]):
+        # Grab
+        i_aph = aph[idx, keep]
+        # Bricaud
+        ans, cov =  curve_fit(func, fit_wave, i_aph, p0=0.05, sigma=sigma)
+        b_rmse = np.sqrt(np.mean((i_aph - func(fit_wave, ans[0]))**2))
+        # NMF
+        nmf_rmse = np.sqrt(np.mean((i_aph - NMF_aph[idx, :])**2))
+
+        # Save
+        sv_chla.append(ans[0])
+        b_rmses.append(b_rmse)
+        nmf_rmses.append(nmf_rmse)
+        aph_440.append(i_aph[i_440])
+    
+    # Write to disk
+    outfile = 'L23_aph_fits.npz'
+    np.savez(outfile, sv_chla=sv_chla, b_rmses=b_rmses, nmf_rmses=nmf_rmses)
+    print(f"Wrote: {outfile}")
+
 if __name__ == '__main__':
 
 
 
+    '''
     # NMF on L23
     #for n in [3]:
     for n in range(1,10):
@@ -230,7 +302,6 @@ if __name__ == '__main__':
         #loisel23_components('bb', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
         loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
 
-    '''
     # PCA on L23
     pca_path = os.path.join(resources.files('cnmf'),
                             'data', 'L23')
@@ -250,7 +321,7 @@ if __name__ == '__main__':
     '''
 
     # L23 NMF on Tara
-    l23_on_tara(skip_save=True)#cut=40000)
+    #l23_on_tara(skip_save=True)#cut=40000)
 
     '''
     # NMF on Tara alone
@@ -267,4 +338,5 @@ if __name__ == '__main__':
     #tara_components('a', N_NMF=10)
     '''
 
-    # CNMF on L23 test
+    # Bricaud aph
+    fit_rmse_aph()
