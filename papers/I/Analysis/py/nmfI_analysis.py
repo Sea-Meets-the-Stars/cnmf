@@ -4,6 +4,9 @@ import os
 import numpy as np
 from importlib import resources
 
+from functools import partial
+
+
 import sklearn
 
 from scipy.interpolate import interp1d
@@ -256,10 +259,12 @@ def fit_rmse_aph():
     L23_A = f_b1998_A(fit_wave)
     L23_E = f_b1998_E(fit_wave)
 
+    '''
     # func to fit
     def func(x, Chl):
         b_aph = L23_A * Chl**(L23_E)
         return b_aph
+    '''
 
     # Fit
     sv_chla = []
@@ -274,8 +279,11 @@ def fit_rmse_aph():
         # Grab
         i_aph = aph[idx, keep]
         # Bricaud
-        ans, cov =  curve_fit(func, fit_wave, i_aph, p0=0.05, sigma=sigma)
-        b_rmse = np.sqrt(np.mean((i_aph - func(fit_wave, ans[0]))**2))
+        #ans, cov =  curve_fit(func, fit_wave, i_aph, p0=0.05, sigma=sigma)
+        ans, cov = fit_aph_with_bricaud(fit_wave, i_aph, sigma, 
+                                        L23_A=L23_A, L23_E=L23_E)
+        b_rmse = np.sqrt(np.mean((i_aph - 
+                                  bricaud_func(fit_wave, ans[0], L23_A, L23_E))**2))
         # NMF
         nmf_rmse = np.sqrt(np.mean((i_aph - NMF_aph[idx, :])**2))
 
@@ -290,6 +298,30 @@ def fit_rmse_aph():
     np.savez(outfile, sv_chla=sv_chla, b_rmses=b_rmses, nmf_rmses=nmf_rmses,
              aph_440=aph_440)
     print(f"Wrote: {outfile}")
+
+def bricaud_func(x, Chl, L23_A, L23_E):
+    b_aph = L23_A * Chl**(L23_E)
+    return b_aph
+
+def fit_aph_with_bricaud(fit_wave, aph, sigma, L23_A=None, L23_E=None):
+
+    if L23_A is None:
+        # Load Bricaud
+        b1998 = ph_absorption.load_bricaud1998()
+
+        # Interpolate
+        f_b1998_A = interp1d(b1998['lambda'], b1998.Aphi)
+        f_b1998_E = interp1d(b1998['lambda'], b1998.Ephi)
+
+        # Apply
+        L23_A = f_b1998_A(fit_wave)
+        L23_E = f_b1998_E(fit_wave)
+
+    partial_func = partial(bricaud_func, L23_A=L23_A, L23_E=L23_E)
+
+    ans, cov =  curve_fit(partial_func, fit_wave, aph, p0=0.05, sigma=sigma)
+    # Return
+    return ans, cov
 
 if __name__ == '__main__':
 

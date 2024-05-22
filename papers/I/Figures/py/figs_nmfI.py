@@ -1,12 +1,16 @@
 """ Figuers for the NMF paper"""
 
+import sys
 import os
 from importlib import resources
+
+from collections import deque
 
 import numpy as np
 from scipy.interpolate import interp1d 
 from scipy.optimize import curve_fit
 from scipy import stats
+from scipy import signal
 
 import seaborn as sns
 import pandas
@@ -22,6 +26,7 @@ mpl.rcParams['font.family'] = 'stixgeneral'
 import corner
 
 from oceancolor.utils import plotting 
+from oceancolor.ph import absorption as ph_absorption
 from oceancolor.utils import cat_utils
 from oceancolor.iop import cdom
 from oceancolor.ph import pigments
@@ -41,6 +46,9 @@ pca_path = os.path.join(resources.files('cnmf'),
 
 tformM = ccrs.Mollweide()
 tformP = ccrs.PlateCarree()                        
+
+sys.path.append(os.path.abspath("../Analysis/py"))
+import nmfI_analysis
 
 # #############################################
 def fig_examples(outfile='fig_examples.png',
@@ -296,6 +304,145 @@ def fig_nmf_pca_basis(outfile:str='fig_nmf_pca_basis.png',
         ax.text(xlbl, 0.05, flbl, color='k',
             transform=ax.transAxes,
               fontsize=18, ha=ha)
+
+        plotting.set_fontsize(ax, 18)
+
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
+def fig_aph_nmf(outfile:str='fig_aph_nmf.png',
+                 nmf_fit:str='L23', Ncomp:int=2,
+                 norm:bool=False, iop:str='aph',
+                 skip_pca:bool=False):
+
+    # Seaborn
+    sns.set(style="whitegrid",
+            rc={"lines.linewidth": 2.5})
+            # 'axes.edgecolor': 'black'
+    sns.set_palette("pastel")
+    sns.set_context("paper")
+
+    fig = plt.figure(figsize=(6,6))
+    gs = gridspec.GridSpec(1,1)
+
+    # a, bb
+    d = cnmf_io.load_nmf(nmf_fit, Ncomp, iop)
+    wave = d['wave']
+    M = d['M']
+
+    ax = plt.subplot(gs[0])
+
+    # Plot
+    for ii in range(Ncomp):
+        # Normalize
+        if norm:
+            iwv = np.argmin(np.abs(wave-440.))
+            nrm = M[ii][iwv]
+        else:
+            nrm = 1.
+        # Step plot
+        sns.lineplot(x=wave, y=M[ii]/nrm, 
+                        label=r'$W_'+f'{ii+1}'+r'^{\rm ph}$',
+                        ax=ax, lw=2)#, drawstyle='steps-pre')
+        #ax.step(wave, M[ii]/nrm, label=f'{itype}:'+r'  $\xi_'+f'{ii+1}'+'$')
+
+    # Thick line around the border of the axis
+    ax.spines['top'].set_linewidth(2)
+    
+    # Horizontal line at 0
+    ax.axhline(0., color='k', ls='--')
+
+    # Labels
+    ax.set_xlabel('Wavelength (nm)')
+    ax.set_xlim(400., 720.)
+
+    lbl = 'NMF'
+    ax.set_ylabel(lbl+' Basis Functions')
+
+    loc = 'upper right'# if ss == 1 else 'upper left'
+    ax.legend(fontsize=15, loc=loc)
+
+    plotting.set_fontsize(ax, 18)
+
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
+
+def fig_aph_fits(outfile:str='fig_aph_fits.png',
+                 nmf_fit:str='L23', Ncomp:int=2,
+                 idxs=[100, 1000],
+                 norm:bool=False, iop:str='aph'):
+
+    # Seaborn
+    sns.set(style="whitegrid",
+            rc={"lines.linewidth": 2.5})
+            # 'axes.edgecolor': 'black'
+    sns.set_palette("pastel")
+    sns.set_context("paper")
+
+    fig = plt.figure(figsize=(12,6))
+    gs = gridspec.GridSpec(1,2)
+
+    # Load
+    # a, bb
+    d = cnmf_io.load_nmf(nmf_fit, Ncomp, iop)
+    wave = d['wave']
+    M = d['M']
+    coeff = d['coeff']
+    recon = np.dot(coeff, M)
+
+
+    ds = loisel23.load_ds(4,0)
+    aph = ds.aph.data
+    ds_wave = ds.Lambda.data
+
+    # Load Bricaud
+    b1998 = ph_absorption.load_bricaud1998()
+    keep = (ds_wave >= 410.) & (ds_wave <= b1998['lambda'].max())
+    fit_wave = ds_wave[keep]
+    sigma = np.ones(fit_wave.size)*0.005
+
+    # Interpolate
+    f_b1998_A = interp1d(b1998['lambda'], b1998.Aphi)
+    f_b1998_E = interp1d(b1998['lambda'], b1998.Ephi)
+
+    # Apply
+    L23_A = f_b1998_A(fit_wave)
+    L23_E = f_b1998_E(fit_wave)
+
+    for ss, idx in enumerate(idxs):
+        ax = plt.subplot(gs[ss])
+        #embed(header='fig_aph_fits 413')
+        i_aph = aph[idx, keep]
+
+
+        # Thick line around the border of the axis
+        ax.spines['top'].set_linewidth(2)
+
+        # Plot aph
+        ax.plot(fit_wave, i_aph, 'ko', label=f'L23: idx={idx}', lw=2, zorder=1)
+
+        # Fit
+        ans, cov = nmfI_analysis.fit_aph_with_bricaud(
+            fit_wave, i_aph, sigma, L23_A=L23_A, L23_E=L23_E)
+        b_model = nmfI_analysis.bricaud_func(fit_wave, ans[0],
+                                             L23_A, L23_E)
+        ax.plot(fit_wave, b_model, 'g-', label='Bricaud', lw=2)
+
+        # NMF
+        ax.plot(wave, recon[idx], 'b-', label='NMF', lw=2)
+
+        # Labels
+        ax.set_xlabel('Wavelength (nm)')
+        ax.set_xlim(400., 720.)
+
+        lbl = 'NMF'
+        ax.set_ylabel(r'$a_{\rm ph}$ (m$^{-1})$')
+
+        loc = 'upper right'# if ss == 1 else 'upper left'
+        ax.legend(fontsize=15, loc=loc)
 
         plotting.set_fontsize(ax, 18)
 
@@ -1860,9 +2007,7 @@ def fig_outliers(items:list=[(2298, 'L23'),
     plt.savefig(outfile, dpi=300)
     print(f"Saved: {outfile}")
 
-def fig_bricaud_rmse():
-
-    outfile = 'fig_bricaud_rmse.png'
+def fig_bricaud_rmse(outfile:str='fig_bricaud_rmse.png'):
 
     # Load
     bricaud = np.load('../Analysis/L23_aph_fits.npz')
@@ -1877,8 +2022,18 @@ def fig_bricaud_rmse():
 
     # Scatter me
     sz = 1.
-    ax.scatter(bricaud['aph_440'], bricaud['b_rmses'], label='Bricaud', s=sz)
-    ax.scatter(bricaud['aph_440'], bricaud['nmf_rmses'], label='NMF', s=sz)
+    ax.scatter(bricaud['aph_440'], bricaud['b_rmses'], color='g', label='Bricaud', s=sz)
+    ax.scatter(bricaud['aph_440'], bricaud['nmf_rmses'], color='b', label='NMF', s=sz)
+
+    print(f'Median ratio = {np.median(bricaud["b_rmses"]/bricaud["nmf_rmses"]):0.2f}')
+
+    # Plot the running median
+    #srt_b = np.argsort(bricaud['aph_440'])
+    #med_b = signal.medfilt(bricaud['b_rmses'][srt_b], kernel_size=31)
+    #med_n = signal.medfilt(bricaud['nmf_rmses'], kernel_size=51)
+
+    #ax.plot(bricaud['aph_440'][srt_b], med_b, 'g-')
+    #ax.plot(bricaud['aph_440'], med_n, 'b--')
 
     #ax.scatter(bricaud['nmf_rmses'], bricaud['b_rmses'])#, label='NMF')
     #ax.plot([1e-5, 1e-1], [1e-5,1e-1], 'k--')
@@ -1891,13 +2046,40 @@ def fig_bricaud_rmse():
     ax.set_xscale('log')
     ax.set_yscale('log')
 
+    plotting.set_fontsize(ax, 17)
 
-    ax.legend()
+    ax.legend(fontsize=15)
 
     # Finish
     plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
     plt.savefig(outfile, dpi=300)
     print(f"Saved: {outfile}")
+
+
+def running_median_binned(data, bin_size=50):
+    sorted_data = deque(maxlen=bin_size)  # Maintains last 50 elements sorted
+    medians = []
+
+    for num in data:
+        # Insert and maintain sorted order
+        sorted_data.append(num)
+        # Sort
+        sorted_data = deque(sorted(sorted_data))
+
+        # Calculate median based on even or odd length
+        middle_index = len(sorted_data) // 2
+        if len(sorted_data) % 2 == 0:
+            median = (sorted_data[middle_index - 1] + sorted_data[middle_index]) / 2
+        else:
+            median = sorted_data[middle_index]
+        medians.append(median)
+
+        # Remove element from the beginning if window is full
+        if len(sorted_data) == bin_size:
+            sorted_data.popleft()
+
+    return medians
+
 
 def main(flg):
     if flg== 'all':
@@ -1915,12 +2097,12 @@ def main(flg):
 
     # L23: PCA and NMF basis functions
     if flg & (2**2):
-        #fig_nmf_pca_basis()
+        fig_nmf_pca_basis()
         #fig_nmf_pca_basis(Ncomp=3,
         #                  outfile='fig_nmf_pca_basis_N3.png')
-        fig_nmf_pca_basis(outfile='fig_nmf_pca_basis_aph.png',
-                          iop='aph', Ncomp=3,
-                          skip_pca=True)
+        #fig_nmf_pca_basis(outfile='fig_nmf_pca_basis_aph.png',
+        #                  iop='aph', Ncomp=3,
+        #                  skip_pca=True)
 
     # Individual
     if flg & (2**3):
@@ -1957,6 +2139,20 @@ def main(flg):
     # Outliers
     if flg & (2**11):
         fig_outliers()
+
+    # APPENDIX
+    # Individual for Tara
+    if flg & (2**20):
+        fig_aph_nmf()
+
+    # aph Fits
+    if flg & (2**21):
+        fig_aph_fits()
+
+    # Bricaud RMSE
+    if flg & (2**22): # 16
+        fig_bricaud_rmse()
+
 
 
     # Individual for Tara
@@ -1999,17 +2195,17 @@ def main(flg):
         fig_H24_vs_aph()
     
     # Fit W2 or W4
-    if flg & (2**20):
+    if flg & (2**70):
         #fig_fit_W2(nmf_fit='L23', chl_min=460.)
         fig_fit_W2(nmf_fit='Tara', chl_min=460.)
 
     # Fit W2 or W4
-    if flg & (2**21):
+    if flg & (2**71):
         #fig_fit_W4(nmf_fit='L23', chl_min=440.)
         fig_fit_W4(nmf_fit='Tara', chl_min=440.)
 
     # Tara Chl
-    if flg & (2**22):
+    if flg & (2**72):
         fig_tara_chl_W()
 
     # Tara Chl outliers
@@ -2034,11 +2230,6 @@ def main(flg):
     # Coefficient distributions for L23 NMF
     if flg & (2**31): # 16
         fig_l23_tara_coeffs()
-
-    # Bricaud RMSE
-    if flg & (2**32): # 16
-        fig_bricaud_rmse()
-
 
     # Fit nmr
     if flg & (2**99): # 64
@@ -2069,9 +2260,14 @@ if __name__ == '__main__':
         #flg += 2 ** 6  # 64 -- Figure 6b: L23 a_g + a_d
         #flg += 2 ** 7  # 128 -- Figure 7: H3
         #flg += 2 ** 8  # 256 -- Figure 8: H2 and H24
-        #flg += 2 ** 9  # 512 -- Figure 9: Fit H2+H4
+        #flg += 2 ** 9  # 512 -- Figure 9: Fit W2+W4
 
         #flg += 2 ** 11  # 2048 -- Figure 11: Outliers
+
+        # Appendix
+        #flg += 2 ** 20  # aph NMF
+        #flg += 2 ** 21  # aph fits
+        flg += 2 ** 22  # aph RMSE
 
         #flg += 2 ** XX  # 64 -- Fit l23 basis functions
 
@@ -2094,7 +2290,6 @@ if __name__ == '__main__':
         #flg += 2 ** 30  # 8 -- L23: Fit NMF basis functions with CDOM, Chl
         #flg += 2 ** 31  # 16 -- L23+Tara; W1, W2, W3, W4 coefficients
 
-        flg += 2 ** 32  # 16 -- Bricaud
 
     else:
         flg = sys.argv[1]
