@@ -2056,31 +2056,6 @@ def fig_bricaud_rmse(outfile:str='fig_bricaud_rmse.png'):
     print(f"Saved: {outfile}")
 
 
-def running_median_binned(data, bin_size=50):
-    sorted_data = deque(maxlen=bin_size)  # Maintains last 50 elements sorted
-    medians = []
-
-    for num in data:
-        # Insert and maintain sorted order
-        sorted_data.append(num)
-        # Sort
-        sorted_data = deque(sorted(sorted_data))
-
-        # Calculate median based on even or odd length
-        middle_index = len(sorted_data) // 2
-        if len(sorted_data) % 2 == 0:
-            median = (sorted_data[middle_index - 1] + sorted_data[middle_index]) / 2
-        else:
-            median = sorted_data[middle_index]
-        medians.append(median)
-
-        # Remove element from the beginning if window is full
-        if len(sorted_data) == bin_size:
-            sorted_data.popleft()
-
-    return medians
-
-
 def main(flg):
     if flg== 'all':
         flg= np.sum(np.array([2 ** ii for ii in range(25)]))
