@@ -6,6 +6,18 @@ from importlib import resources
 import numpy as np
 
 def pcanmf_filename(nmf_fit:str, decomp:str, N_NMF:int, iop:str=None):
+    """
+    Generate the filename for the pcanmf output file.
+
+    Parameters:
+        nmf_fit (str): The name of the NMF fit.
+        decomp (str): The type of decomposition.
+        N_NMF (int): The number of NMF components.
+        iop (str, optional): Additional identifier for the output file. Defaults to None.
+
+    Returns:
+        str: The filename for the pcanmf output file.
+    """
     path = os.path.join(resources.files('cnmf'),
                         'data', nmf_fit)
     outroot = os.path.join(path, f'{nmf_fit}_{decomp}_{N_NMF:02d}')

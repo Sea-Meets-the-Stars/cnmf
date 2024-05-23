@@ -963,10 +963,11 @@ def fig_l23_tara_coeffs(
 # #########################################################
 def fig_l23_vs_tara_M(
     outfile:str='fig_l23_vs_tara_M.png',
-    N_NMF:int=4, iop:str='a'):
+    N_NMF:int=4, iop:str='a', lowsig:bool=False):
 
     # Load L23 fit
-    d_l23 = cnmf_io.load_nmf('L23', N_NMF, iop)
+    l23_ds = 'L23' if not lowsig else 'LOWL23'
+    d_l23 = cnmf_io.load_nmf(l23_ds, N_NMF, iop)
     M_l23 = d_l23['M']
     coeff_l23 = d_l23['coeff']
     wave_l23 = d_l23['wave']
@@ -2085,8 +2086,9 @@ def main(flg):
         fig_nmf_indiv([100, 2000], nmf_fit='L23')
 
     # Compare the NMF bases
-    if flg & (2**4): # 32
+    if flg & (2**4): # 16
         fig_l23_vs_tara_M()
+        #fig_l23_vs_tara_M(lowsig=True)
         #fig_l23_vs_tara_M(N_NMF=3)
         #fig_l23_vs_tara_M(outfile='fig_l23_vs_tara_M_N3.png',
         #    N_NMF=3)
