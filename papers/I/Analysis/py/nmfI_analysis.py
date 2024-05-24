@@ -36,6 +36,8 @@ pca_path = os.path.join(resources.files('cnmf'),
 def loisel23_components(iop:str, N_NMF:int=10, 
     min_wv:float=min_wv, high_cut:float=high_cut,
     clobber:bool=False, normalize:bool=True,
+    prefix_outfile:str='',
+    sigma=0.05,
     X:int=4, Y:int=0):
     """
     Perform NMF analysis on Loisel23 data.
@@ -47,12 +49,13 @@ def loisel23_components(iop:str, N_NMF:int=10,
     """
 
     # Output file
-    outfile = cnmf_io.pcanmf_filename('L23', 'NMF', N_NMF=N_NMF, iop=iop)
+    outfile = cnmf_io.pcanmf_filename(f'{prefix_outfile}L23', 'NMF', N_NMF=N_NMF, iop=iop)
     if (not clobber) and (os.path.isfile(outfile)):
         print(f'File exists: {outfile}')
         return
     # Root
     outroot = outfile.replace('.npz','')
+
 
     # Load up the data
     l23_ds = loisel23.load_ds(X, Y)
@@ -76,7 +79,7 @@ def loisel23_components(iop:str, N_NMF:int=10,
         raise ValueError(f"Unknown IOP: {iop}")
 
     # Prep
-    spec_nw, mask, err = iops.prep(l23_iop)
+    spec_nw, mask, err = iops.prep(l23_iop, sigma=sigma)
 
     # Do it
     comps = nmf_imaging.NMFcomponents(
@@ -327,14 +330,17 @@ if __name__ == '__main__':
 
 
 
-    '''
     # NMF on L23
     #for n in [3]:
     for n in range(1,10):
         #loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
         #loisel23_components('bb', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
-        loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+        #loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+        # Lower sigma
+        loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, sigma=0.005,
+                            prefix_outfile='LOW')
 
+    '''
     # PCA on L23
     pca_path = os.path.join(resources.files('cnmf'),
                             'data', 'L23')
@@ -372,4 +378,4 @@ if __name__ == '__main__':
     '''
 
     # Bricaud aph
-    fit_rmse_aph()
+    #fit_rmse_aph()
