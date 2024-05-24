@@ -4,8 +4,22 @@ import numpy as np
 
 from cnmf import zhu_nmf as nmf
 
-def calc_coeff(M:np.ndarray, spec:np.ndarray, V:np.ndarray):
+from IPython import embed
 
+def calc_coeff(M:np.ndarray, spec:np.ndarray, V:np.ndarray):
+    """
+    Calculate the coefficients using non-negative matrix factorization (NMF).
+
+    Parameters:
+        - M (np.ndarray): The input matrix M. (ncomp, nwave)
+        - spec (np.ndarray): The input spectrum array. (nspec, nwave)
+        - V (np.ndarray): The input V array -- inverse variance
+            same shape as spec
+
+    Returns:
+        - coeff (np.ndarray): The calculated coefficients.
+
+    """
     # Build it up one component at a time
     H_tmp = None
     for nn in range(M.shape[0]):
