@@ -335,10 +335,10 @@ if __name__ == '__main__':
     for n in range(1,10):
         #loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
         #loisel23_components('bb', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
-        #loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+        loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
         # Lower sigma
-        loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, sigma=0.005,
-                            prefix_outfile='LOW')
+        #loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, sigma=0.005,
+        #                    prefix_outfile='LOW')
 
     '''
     # PCA on L23
@@ -357,10 +357,10 @@ if __name__ == '__main__':
 
     # L23 PCA on Tara
     l23_on_tara(decomp='PCA')
-    '''
 
     # L23 NMF on Tara
     #l23_on_tara(skip_save=True)#cut=40000)
+    '''
 
     '''
     # NMF on Tara alone
