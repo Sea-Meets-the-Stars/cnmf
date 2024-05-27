@@ -303,6 +303,149 @@ def fig_nmf_pca_basis(outfile:str='fig_nmf_pca_basis.png',
     plt.savefig(outfile, dpi=300)
     print(f"Saved: {outfile}")
 
+def fig_aph_nmf(outfile:str='fig_aph_nmf.png',
+                 nmf_fit:str='L23', Ncomp:int=2,
+                 norm:bool=False, iop:str='aph',
+                 skip_pca:bool=False):
+
+    # Seaborn
+    sns.set(style="whitegrid",
+            rc={"lines.linewidth": 2.5})
+            # 'axes.edgecolor': 'black'
+    sns.set_palette("pastel")
+    sns.set_context("paper")
+
+    fig = plt.figure(figsize=(6,6))
+    gs = gridspec.GridSpec(1,1)
+
+    # a, bb
+    d = cnmf_io.load_nmf(nmf_fit, Ncomp, iop)
+    wave = d['wave']
+    M = d['M']
+
+    evar_i = cnmf_stats.evar_computation(
+        d['spec'], d['coeff'], d['M'])
+    print(f"Explained variance: {100*evar_i:.2f}%")
+
+    ax = plt.subplot(gs[0])
+
+    # Plot
+    for ii in range(Ncomp):
+        # Normalize
+        if norm:
+            iwv = np.argmin(np.abs(wave-440.))
+            nrm = M[ii][iwv]
+        else:
+            nrm = 1.
+        # Step plot
+        sns.lineplot(x=wave, y=M[ii]/nrm, 
+                        label=r'$W_'+f'{ii+1}'+r'^{\rm ph}$',
+                        ax=ax, lw=2)#, drawstyle='steps-pre')
+        #ax.step(wave, M[ii]/nrm, label=f'{itype}:'+r'  $\xi_'+f'{ii+1}'+'$')
+
+    # Thick line around the border of the axis
+    ax.spines['top'].set_linewidth(2)
+    
+    # Horizontal line at 0
+    ax.axhline(0., color='k', ls='--')
+
+    # Labels
+    ax.set_xlabel('Wavelength (nm)')
+    ax.set_xlim(400., 720.)
+
+    lbl = 'NMF'
+    ax.set_ylabel(lbl+' Basis Functions')
+
+    loc = 'upper right'# if ss == 1 else 'upper left'
+    ax.legend(fontsize=15, loc=loc)
+
+    plotting.set_fontsize(ax, 18)
+
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
+
+def fig_aph_fits(outfile:str='fig_aph_fits.png',
+                 nmf_fit:str='L23', Ncomp:int=2,
+                 idxs=[100, 1000],
+                 norm:bool=False, iop:str='aph'):
+
+    # Seaborn
+    sns.set(style="whitegrid",
+            rc={"lines.linewidth": 2.5})
+            # 'axes.edgecolor': 'black'
+    sns.set_palette("pastel")
+    sns.set_context("paper")
+
+    fig = plt.figure(figsize=(12,6))
+    gs = gridspec.GridSpec(1,2)
+
+    # Load
+    # a, bb
+    d = cnmf_io.load_nmf(nmf_fit, Ncomp, iop)
+    wave = d['wave']
+    M = d['M']
+    coeff = d['coeff']
+    recon = np.dot(coeff, M)
+
+
+    ds = loisel23.load_ds(4,0)
+    aph = ds.aph.data
+    ds_wave = ds.Lambda.data
+
+    # Load Bricaud
+    b1998 = ph_absorption.load_bricaud1998()
+    keep = (ds_wave >= 410.) & (ds_wave <= b1998['lambda'].max())
+    fit_wave = ds_wave[keep]
+    sigma = np.ones(fit_wave.size)*0.005
+
+    # Interpolate
+    f_b1998_A = interp1d(b1998['lambda'], b1998.Aphi)
+    f_b1998_E = interp1d(b1998['lambda'], b1998.Ephi)
+
+    # Apply
+    L23_A = f_b1998_A(fit_wave)
+    L23_E = f_b1998_E(fit_wave)
+
+    for ss, idx in enumerate(idxs):
+        ax = plt.subplot(gs[ss])
+        #embed(header='fig_aph_fits 413')
+        i_aph = aph[idx, keep]
+
+
+        # Thick line around the border of the axis
+        ax.spines['top'].set_linewidth(2)
+
+        # Plot aph
+        ax.plot(fit_wave, i_aph, 'ko', label=f'L23: idx={idx}', lw=2, zorder=1)
+
+        # Fit
+        ans, cov = nmfI_analysis.fit_aph_with_bricaud(
+            fit_wave, i_aph, sigma, L23_A=L23_A, L23_E=L23_E)
+        b_model = nmfI_analysis.bricaud_func(fit_wave, ans[0],
+                                             L23_A, L23_E)
+        ax.plot(fit_wave, b_model, 'g-', label='Bricaud', lw=2)
+
+        # NMF
+        ax.plot(wave, recon[idx], 'b-', label='NMF', lw=2)
+
+        # Labels
+        ax.set_xlabel('Wavelength (nm)')
+        ax.set_xlim(400., 720.)
+
+        lbl = 'NMF'
+        ax.set_ylabel(r'$a_{\rm ph}$ (m$^{-1})$')
+
+        loc = 'upper right'# if ss == 1 else 'upper left'
+        ax.legend(fontsize=15, loc=loc)
+
+        plotting.set_fontsize(ax, 18)
+
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
 def fig_nmf_rmse(outfile:str='fig_nmf_rmse.png',
                  nmf_fit:str='L23'):
 
@@ -1137,7 +1280,11 @@ def fig_H1_vs_adg(outfile:str='fig_H1_vs_adg.png',
     plt.clf()
     ax = plt.gca()
 
-    ax = sns.histplot(x=L23_NMF_CDOM, y=L23_gd, log_scale=True)
+    hb = ax.hexbin(coeff[:,0], L23_gd,
+                   gridsize=100, bins='log', 
+                   xscale='log', yscale='log',
+                    cmap='Reds')
+    cb = plt.colorbar(hb, ax=ax, label='counts')
     #
     ax.set_xlabel(r'$H_1^{\rm L23}$')
     ax.set_ylabel(r'$a_{\rm dg}^{\rm L23}(405\,{\rm nm})$')
@@ -2028,6 +2175,11 @@ if __name__ == '__main__':
         #flg += 2 ** 9  # 512 -- Figure 9: Fit H2+H4
 
         #flg += 2 ** 11  # 2048 -- Figure 11: Outliers
+
+        # Appendix
+        flg += 2 ** 20  # aph NMF
+        #flg += 2 ** 21  # aph fits
+        #flg += 2 ** 22  # aph RMSE
 
         #flg += 2 ** XX  # 64 -- Fit l23 basis functions
 
