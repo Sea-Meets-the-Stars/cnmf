@@ -1362,7 +1362,6 @@ def fig_H3_vs_adg(outfile:str='fig_H3_vs_adg.png',
 
     # rank correlation test
     tau, p_value = stats.kendalltau(L23_NMF_H3, L23_gd_500_400)
-    embed(header='1218 of figs_nmfI.py')
 
     if skip_save:
         return
@@ -1612,6 +1611,8 @@ def fig_H3_combined(outfile='fig_H3_combined.png'):
     high_out = (NMF_chl > 2.) & (Tara_chlA < 0.5)
     all_high = np.where(high_out)[0]
     high_idx = all_high[0]
+
+    print(f'High: {high_idx} {d["UID"][high_idx]}')
 
     # FIGURE
     fig = plt.figure(figsize=(12,6))
@@ -2007,6 +2008,56 @@ def fig_outliers(items:list=[(2298, 'L23'),
     plt.savefig(outfile, dpi=300)
     print(f"Saved: {outfile}")
 
+def fig_bricaud_rmse():
+
+    outfile = 'fig_bricaud_rmse.png'
+
+    # Load
+    bricaud = np.load('../Analysis/L23_aph_fits.npz')
+
+    #df = pandas.DataFrame(bricaud)
+
+    fig = plt.figure(figsize=(7,7))
+    gs = gridspec.GridSpec(1,1)
+
+
+    ax = plt.subplot(gs[0])
+
+    # Scatter me
+    sz = 1.
+    ax.scatter(bricaud['aph_440'], bricaud['b_rmses'], color='g', label='Bricaud', s=sz)
+    ax.scatter(bricaud['aph_440'], bricaud['nmf_rmses'], color='b', label='NMF', s=sz)
+
+    print(f'Median ratio = {np.median(bricaud["b_rmses"]/bricaud["nmf_rmses"]):0.2f}')
+
+    # Plot the running median
+    #srt_b = np.argsort(bricaud['aph_440'])
+    #med_b = signal.medfilt(bricaud['b_rmses'][srt_b], kernel_size=31)
+    #med_n = signal.medfilt(bricaud['nmf_rmses'], kernel_size=51)
+
+    #ax.plot(bricaud['aph_440'][srt_b], med_b, 'g-')
+    #ax.plot(bricaud['aph_440'], med_n, 'b--')
+
+    ax.set_xlabel(r'$a_{\rm ph}(440\,{\rm nm})$')
+    ax.set_ylabel('RMSE')
+
+    # Log on x-axis
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+
+    plotting.set_fontsize(ax, 17)
+
+    ax.legend(fontsize=15)
+
+    # Finish
+    plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
+    plt.savefig(outfile, dpi=300)
+    print(f"Saved: {outfile}")
+
+    # Stats
+    smaller = bricaud['nmf_rmses'] < bricaud['b_rmses']
+    print(f'There are {np.sum(smaller)/smaller.size}% smaller NMF RMSEs')
+
 def main(flg):
     if flg== 'all':
         flg= np.sum(np.array([2 ** ii for ii in range(25)]))
@@ -2067,6 +2118,19 @@ def main(flg):
         fig_outliers()
 
 
+    # APPENDIX
+    # Individual for Tara
+    if flg & (2**20):
+        fig_aph_nmf()
+
+    # aph Fits
+    if flg & (2**21):
+        fig_aph_fits()
+
+    # Bricaud RMSE
+    if flg & (2**22): # 16
+        fig_bricaud_rmse()
+
     # Individual for Tara
     if flg & (2**13):
         fig_nmf_indiv(12, nmf_fit='Tara')
@@ -2117,7 +2181,7 @@ def main(flg):
         fig_fit_W4(nmf_fit='Tara', chl_min=440.)
 
     # Tara Chl
-    if flg & (2**22):
+    if flg & (2**82):
         fig_tara_chl_W()
 
     # Tara Chl outliers
@@ -2142,6 +2206,10 @@ def main(flg):
     # Coefficient distributions for L23 NMF
     if flg & (2**31): # 16
         fig_l23_tara_coeffs()
+
+    # Bricaud RMSE
+    if flg & (2**32): # 16
+        fig_bricaud_rmse()
 
     # Fit nmr
     if flg & (2**99): # 64
@@ -2177,7 +2245,7 @@ if __name__ == '__main__':
         #flg += 2 ** 11  # 2048 -- Figure 11: Outliers
 
         # Appendix
-        flg += 2 ** 20  # aph NMF
+        #flg += 2 ** 20  # aph NMF
         #flg += 2 ** 21  # aph fits
         #flg += 2 ** 22  # aph RMSE
 
