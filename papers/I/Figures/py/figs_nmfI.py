@@ -28,8 +28,7 @@ from oceancolor.ph import pigments
 from oceancolor.hydrolight import loisel23
 from oceancolor.tara import io as tara_io
 
-
-from ihop.iops import pca as ihop_pca
+from ihop.iops import io as ihop_iop_io
 
 from cnmf import io as cnmf_io
 from cnmf import stats as cnmf_stats
@@ -160,8 +159,7 @@ def fig_l23_pca_nmf_var(
 
     # Load up
     if nmf_fit == 'L23':
-        pca_N20 = ihop_pca.load('pca_L23_X4Y0_a_N20.npz',
-                                    pca_path=pca_path)
+        pca_N20 = np.load(os.path.join(pca_path,'pca_L23_X4Y0_a_N20.npz'))
         #pca_N20 = ihop_pca.load('pca_L23_X4Y0_Tara_a_N20.npz')
     #L23_Tara_pca = ihop_pca.load(f'pca_L23_X4Y0_Tara_a_N{N}.npz')
     #wave = L23_pca_N20['wavelength']
@@ -246,8 +244,11 @@ def fig_nmf_pca_basis(outfile:str='fig_nmf_pca_basis.png',
 
         # load
         if ss == 0:
-            ab, Rs, d, d_bb = ihop_pca.load_loisel_2023_pca(
-                N_PCA=Ncomp, l23_path=pca_path)
+            #ab, Rs, d, d_bb = ihop_pca.load_loisel_2023_pca(
+            #    N_PCA=Ncomp, l23_path=pca_path)
+            ab, Rs, d, d_bb = ihop_iop_io.load_loisel2023_decomp(
+                ('pca', 'pca'), (Ncomp, Ncomp), 4, 0)
+            
             wave = d['wavelength']
         elif ss == 1:
             d = cnmf_io.load_nmf(nmf_fit, Ncomp, iop)
@@ -1425,8 +1426,9 @@ def fig_H24_vs_aph(outfile:str='fig_H24_vs_aph.png',
 def fig_variance_mode(outfile:str='fig_variance_mode.png'): 
 
     # Load PCAs
-    pca_N20 = ihop_pca.load('pca_L23_X4Y0_a_N20.npz',
-                                    pca_path=pca_path)
+    pca_N20 = np.load(os.path.join(pca_path,'pca_L23_X4Y0_a_N20.npz'))
+    #pca_N20 = ihop_pca.load('pca_L23_X4Y0_a_N20.npz',
+    #                                pca_path=pca_path)
 
     fig = plt.figure(figsize=(8,6))
     gs = gridspec.GridSpec(1,1)
