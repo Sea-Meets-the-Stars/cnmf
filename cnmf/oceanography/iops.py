@@ -3,7 +3,6 @@
 import numpy as np
 
 from oceancolor.hydrolight import loisel23
-from oceancolor.iop import cross
 from oceancolor.tara import io as tara_io
 from oceancolor.tara import spectra
 from oceancolor.utils import spectra as spec_utils
@@ -11,33 +10,7 @@ from oceancolor import water
 
 from IPython import embed
 
-def prep(spec:np.ndarray, sigma:float=0.05):
-    """ Prep IOP data for NMF analysis
 
-    Args:
-        spec (np.ndarray): IOPs (nspec, nwave)
-        sigma (float, optional): Error to use. Defaults to 0.05.
-
-    Returns:
-        tuple: 
-            - **new_spec** (*np.ndarray*) -- IOPs
-            - **mask** (*np.ndarray*) -- Mask
-            - **err** (*np.ndarray*) -- Error
-    """
-    # Prep
-    new_spec = spec.copy()
-    nspec, nwave = spec.shape
-
-    # Reshape
-    new_spec = np.reshape(new_spec, (new_spec.shape[0],
-                     new_spec.shape[1], 1))
-
-    # Build mask and error
-    mask = (new_spec >= 0.).astype(int)
-    err = np.ones_like(mask)*sigma
-
-    # Return
-    return new_spec, mask, err
 
 
 def tara_matched_to_l23(low_cut:float=405., high_cut:float=705., 
