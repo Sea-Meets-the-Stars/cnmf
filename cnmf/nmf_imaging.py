@@ -95,7 +95,7 @@ def decolumnize(data, mask):
         return mask_flatten.reshape(mask.shape)
     else:
         #several columns to decolumnize
-        result = np.zeros((data.shape[1], mask.sgrouphape[0], mask.shape[1]))
+        result = np.zeros((data.shape[1], mask.shape[0], mask.shape[1]))
         for i in range(data.shape[1]):
             results_flatten = np.copy(mask_flatten)
             results_flatten[np.where(mask_flatten == 1)] = data[:, i]
