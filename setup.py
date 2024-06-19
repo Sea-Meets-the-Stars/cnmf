@@ -8,11 +8,11 @@ from setuptools import setup, find_packages
 setup_keywords = dict()
 setup_keywords['name'] = 'cnmf'
 setup_keywords['description'] = 'Constrained Non-negative Matrix Factorization'
-setup_keywords['author'] = 'J. Xavier Prochaska, P. Gray'
+setup_keywords['author'] = 'J. Xavier Prochaska, Patrick Gray'
 setup_keywords['author_email'] = 'jxp@ucsc.edu'
 setup_keywords['license'] = 'BSD'
 setup_keywords['url'] = 'https://github.com/AI-for-Ocean-Science/cnmf'
-setup_keywords['version'] = '0.0.dev0'
+setup_keywords['version'] = '0.1.dev0'
 # Use README.rst as long_description.
 setup_keywords['long_description'] = ''
 if os.path.exists('README.md'):
@@ -21,14 +21,11 @@ if os.path.exists('README.md'):
 setup_keywords['provides'] = [setup_keywords['name']]
 setup_keywords['requires'] = ['Python (>=3.10.0)']
 setup_keywords['install_requires'] = [
-    'torch',  
-    'torchvision', 'seaborn', 'smart-open[s3]', 'pyarrow',
-    'scikit-learn', 'scikit-image', 'tqdm', 'astropy', 'astropy-healpix',
-    'healpy', 'cftime', 'bokeh', 'umap-learn', 'llvmlite', 'boto3',
-    'xarray', 'h5netcdf', 'emcee', 'corner',
+    'seaborn', 'scikit-learn', 'scikit-image', 
+    'healpy', 'cftime', 'bokeh', 'llvmlite', 
+    'xarray', 'h5netcdf', 'ipywidgets', 'matplotlib',
     'importlib-metadata', 'timm==0.3.2',
-    'scikit-learn', 'scikit-image', 'tqdm',
-    'geopandas'] 
+    'scikit-learn', 'geopandas'] 
 setup_keywords['zip_safe'] = False
 setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages()
