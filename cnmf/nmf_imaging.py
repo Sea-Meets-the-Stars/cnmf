@@ -103,13 +103,33 @@ def decolumnize(data, mask):
             
         return result
 
-def NMFcomponents(ref, ref_err = None, mask = None, n_components = None, maxiters = 1e3, 
-                  oneByOne = False, path_save = None,
-                  seed:int=None, normalize:bool=False):
-    #"""ref and ref_err should be (n * height * width) where n is the number of references. Mask is the region we are interested in.
-    #if mask is a 3D array (binary, 0 and 1), then you can mask out different regions in the ref.
-    #if path_save is provided, then the code will star from there.
-    #"""
+def NMFcomponents(ref, ref_err=None, mask=None, n_components=None, maxiters=1e3, 
+                  oneByOne=False, path_save=None,
+                  seed:int=None, normalize:bool=False,
+                  verbose:bool=False):
+    """
+    Perform non-negative matrix factorization (NMF) on the input data.
+
+    Parameters:
+        - ref (ndarray): The input data array of shape (n, height, width), where n is the number of references.
+        - ref_err (ndarray, optional): The error array associated with the input data. If not provided, it is calculated as the square root of the input data.
+        - mask (ndarray, optional): The mask array indicating the region of interest. If not provided, the entire image is considered.
+        - n_components (int, optional): The number of components to extract. If not provided, it is set to the number of references.
+        - maxiters (int, optional): The maximum number of iterations for the NMF algorithm. Default is 1000.
+        - oneByOne (bool, optional): If True, the components are built one by one. If False, all components are built together. Default is False.
+        - path_save (str, optional): The path to save the intermediate results. If provided, the code will start from there.
+        - seed (int, optional): The seed value for random number generation. If provided, the results will be repeatable.
+        - normalize (bool, optional): If True, the components will be normalized. Default is False.
+        - verbose (bool, optional): If True, print additional information during the computation. Default is False.
+
+    Returns:
+        - components (ndarray): The extracted components of shape (n_components, height, width).
+
+    Note:
+    - The input data `ref` and `ref_err` should be of shape (n, height, width), where n is the number of references.
+    - The `mask` array can be used to mask out different regions in the input data.
+    - If `path_save` is provided, the code will start from the saved intermediate results.
+    """
     # Set a seed for repeatability?
     if seed is not None:
         np.random.seed(seed)
@@ -191,7 +211,7 @@ def NMFcomponents(ref, ref_err = None, mask = None, n_components = None, maxiter
                 
                         g_img = nmf.NMF(ref_columnized, V = 1.0/ref_err_columnized**2, W = W_ini, H = H_ini, n_components= n,
                                         normalize=normalize)
-                    chi2 = g_img.SolveNMF(maxiters=maxiters)
+                    chi2 = g_img.SolveNMF(maxiters=maxiters, verbose=verbose)
             
                     components_column = g_img.W/np.sqrt(np.nansum(g_img.W**2, axis = 0)) #normalize the components
             else:
@@ -216,7 +236,7 @@ def NMFcomponents(ref, ref_err = None, mask = None, n_components = None, maxiter
                 
                             g_img = nmf.NMF(ref_columnized, V = 1.0/ref_err_columnized**2, W = W_ini, H = H_ini, n_components= n,
                                             normalize=normalize)
-                        chi2 = g_img.SolveNMF(maxiters=maxiters)
+                        chi2 = g_img.SolveNMF(maxiters=maxiters, verbose=verbose)
                         print('\t\t\t Calculation for ' + str(n) + ' components done, overwriting raw 2D component matrix at ' + path_save + '_comp.npy')
                         #fits.writeto(path_save + '_comp.fits', g_img.W, overwrite = True)
                         np.save(path_save + '_comp.npy', g_img.W)
@@ -263,7 +283,7 @@ def NMFcomponents(ref, ref_err = None, mask = None, n_components = None, maxiter
                 
                                 g_img = nmf.NMF(ref_columnized, V = 1.0/ref_err_columnized**2, W = W_ini, H = H_ini, n_components= n,
                                                 normalize=normalize)
-                            chi2 = g_img.SolveNMF(maxiters=maxiters)
+                            chi2 = g_img.SolveNMF(maxiters=maxiters, verbose=verbose)
                             print('\t\t\t Calculation for ' + str(n) + ' components done, overwriting raw 2D component matrix at ' + path_save + '_comp.npy')
                             np.save(path_save + '_comp.npy', g_img.W)
                             #fits.writeto(path_save + '_comp.fits', g_img.W, overwrite = True)
@@ -291,7 +311,7 @@ def NMFcomponents(ref, ref_err = None, mask = None, n_components = None, maxiter
                 
                         g_img = nmf.NMF(ref_columnized, V = 1.0/ref_err_columnized**2, W = W_ini, H = H_ini, M = mask_columnized, n_components= n,
                                         normalize=normalize)
-                    chi2 = g_img.SolveNMF(maxiters=maxiters)
+                    chi2 = g_img.SolveNMF(maxiters=maxiters, verbose=verbose)
             
                     components_column = g_img.W/np.sqrt(np.nansum(g_img.W**2, axis = 0)) #normalize the components
             else:
@@ -316,7 +336,7 @@ def NMFcomponents(ref, ref_err = None, mask = None, n_components = None, maxiter
                 
                             g_img = nmf.NMF(ref_columnized, V = 1.0/ref_err_columnized**2, W = W_ini, H = H_ini, M = mask_columnized, n_components= n,
                                             normalize=normalize)
-                        chi2 = g_img.SolveNMF(maxiters=maxiters)
+                        chi2 = g_img.SolveNMF(maxiters=maxiters, verbose=verbose)
                         print('\t\t\t Calculation for ' + str(n) + ' components done, overwriting raw 2D component matrix at ' + path_save + '_comp.npy')
                         #fits.writeto(path_save + '_comp.fits', g_img.W, overwrite = True)
                         np.save(path_save + '_comp.npy', g_img.W)
