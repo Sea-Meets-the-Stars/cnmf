@@ -190,6 +190,12 @@ def NMFcomponents(ref, ref_err=None, mask=None, n_components=None, maxiters:int=
             for i in range(components.shape[0]):
                 components[i][np.where(mask_mark == 0)] = np.nan
             components = (components.T/np.sqrt(np.nansum(components**2, axis = (1, 2))).T).T
+
+        # Save
+        print('\t\t\t Calculation for components done, overwriting raw 2D component matrix at ' + path_save + '_comp.npy')
+        np.save(path_save + '_comp.npy', g_img.W)
+        print('\t\t\t Calculation for components done, overwriting raw 2D coefficient matrix at ' + path_save + '_coef.npy')
+        np.save(path_save + '_coef.npy', g_img.H)
     else:
         print("Building components one by one...")
         if len(mask.shape) == 2:
@@ -238,12 +244,9 @@ def NMFcomponents(ref, ref_err=None, mask=None, n_components=None, maxiters:int=
                                             normalize=normalize)
                         chi2 = g_img.SolveNMF(maxiters=maxiters, verbose=verbose)
                         print('\t\t\t Calculation for ' + str(n) + ' components done, overwriting raw 2D component matrix at ' + path_save + '_comp.npy')
-                        #fits.writeto(path_save + '_comp.fits', g_img.W, overwrite = True)
                         np.save(path_save + '_comp.npy', g_img.W)
-                        #fits.writeto(path_save + '_comp.fits', g_img.W, overwrite = True)
                         print('\t\t\t Calculation for ' + str(n) + ' components done, overwriting raw 2D coefficient matrix at ' + path_save + '_coef.npy')
                         np.save(path_save + '_coef.npy', g_img.H)
-                        #fits.writeto(path_save + '_coef.fits', g_img.H, overwrite = True)
                         components_column = g_img.W/np.sqrt(np.nansum(g_img.W**2, axis = 0)) #normalize the components
                 else:
                     #W_assign = fits.getdata(path_save + '_comp.fits')
