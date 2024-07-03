@@ -103,7 +103,7 @@ def decolumnize(data, mask):
             
         return result
 
-def NMFcomponents(ref, ref_err=None, mask=None, n_components=None, maxiters=1e3, 
+def NMFcomponents(ref, ref_err=None, mask=None, n_components=None, maxiters:int=1000,
                   oneByOne=False, path_save=None,
                   seed:int=None, normalize:bool=False,
                   verbose:bool=False):
@@ -176,13 +176,13 @@ def NMFcomponents(ref, ref_err=None, mask=None, n_components=None, maxiters=1e3,
         if len(mask.shape) == 2:
             g_img = nmf.NMF(ref_columnized, V=1.0/ref_err_columnized**2, n_components=n_components,
                             normalize=normalize)
-            chi2, time_used = g_img.SolveNMF(maxiters=maxiters)
+            chi2, time_used = g_img.SolveNMF(maxiters=maxiters, verbose=verbose)
             components_column = g_img.W/np.sqrt(np.nansum(g_img.W**2, axis = 0)) #normalize the components
             components = decolumnize(components_column, mask = mask)
         elif len(mask.shape) == 3: # different missing data at different references.
             g_img = nmf.NMF(ref_columnized, V=1.0/ref_err_columnized**2, M = mask_columnized, n_components=n_components,
                             normalize=normalize)
-            chi2, time_used = g_img.SolveNMF(maxiters=maxiters)
+            chi2, time_used = g_img.SolveNMF(maxiters=maxiters, verbose=verbose)
             components_column = g_img.W/np.sqrt(np.nansum(g_img.W**2, axis = 0)) #normalize the components
             
             components = decolumnize(components_column, mask = mask_mark) # ignore the regions that are commonly masked out in all refs 
