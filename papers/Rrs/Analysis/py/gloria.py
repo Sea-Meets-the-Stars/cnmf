@@ -86,6 +86,37 @@ def pca_gloria_l23(min_wv:float=400, high_cut:float=700):
     plt.savefig('pca_gloria_l23.png', dpi=300)
     print(f'Saved pca_gloria_l23.png')
 
+    # Now let's compare the first 6 PC modes
+
+    fig = plt.figure(figsize=(8, 8))
+    ax = plt.gca()
+
+    #embed(header='pca_gloria_l23 77')
+    clrs = ['b', 'g', 'r', 'c', 'm', 'y']
+    for ii, clr in enumerate(clrs):
+        if ii == 0:
+            l23_lbl = 'Loisel23'
+            gloria_lbl = 'Gloria'
+        else:
+            l23_lbl = None
+            gloria_lbl = None
+        comb_lbl = f'Comb PC{ii+1}'
+        ax.plot(l23_wave, l23_pca_fit.components_[ii], color=clr, ls='--', label=l23_lbl)
+        ax.plot(l23_wave, gloria_pca_fit.components_[ii], color=clr, ls=':', label=gloria_lbl)
+        ax.plot(l23_wave, comb_pca_fit.components_[ii], color=clr, ls='-', label=comb_lbl)
+
+    # Axes
+    ax.set_xlabel('Wavelength (nm)')
+    ax.set_ylabel('PC mode')
+    ax.legend(fontsize=10)
+    ax.grid()
+    ax.minorticks_on()
+
+    plotting.set_fontsize(ax, 15)
+    # Save
+    plt.savefig('pca_gloria_l23_modes.png', dpi=300)
+    print(f'Saved pca_gloria_l23_modes.png')
+
     #embed(header='pca_gloria_l23 77')
  
 
