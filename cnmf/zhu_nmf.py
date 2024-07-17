@@ -324,7 +324,7 @@ class NMF:
             if (not np.isfinite(chi2)):
                raise ValueError("NMF construction failed, likely due to missing data")
 
-            if (np.mod(niter, 20)==0) and verbose:
+            if (np.mod(niter, 50)==0) and verbose:
                 print("Current Chi2={0:.4f}, Previous Chi2={1:.4f}, Change={2:.4f}% @ niters={3}".format(chi2,oldchi2,(oldchi2-chi2)/oldchi2*100.,niter), flush=True)
 
             niter += 1
