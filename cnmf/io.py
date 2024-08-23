@@ -23,6 +23,7 @@ def pcanmf_filename(nmf_fit:str, decomp:str, N_NMF:int, iop:str=None):
     outroot = os.path.join(path, f'{nmf_fit}_{decomp}_{N_NMF:02d}')
     if iop is not None:
         outroot += f'_{iop}'
+
     # FInish
     nmf_file = outroot+'.npz'
     return nmf_file

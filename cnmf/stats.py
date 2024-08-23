@@ -1,4 +1,6 @@
-""" This module contains functions for statistical analysis of NMF results """
+""" This module contains functions for statistical analysis of NMF results 
+WIP -- ignore this for now
+"""
 
 import numpy as np
 

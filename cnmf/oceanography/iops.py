@@ -17,6 +17,12 @@ def prep(spec:np.ndarray, sigma:float=0.05):
     Args:
         spec (np.ndarray): IOPs (nspec, nwave)
         sigma (float, optional): Error to use. Defaults to 0.05.
+        X (int, optional): simulation scenario   
+            X = 1: No inelastic processes included.
+            X = 2: Raman scattering by water molecules included.
+            X = 4: Raman scattering by water molecules and fluorescence of chlorophyll-a included.
+        Y (int, optional):  solar zenith angle used in the simulation, and 
+            represents a value of 00, 30, or 60 degrees.
 
     Returns:
         tuple: 
