@@ -13,7 +13,9 @@ import pandas
 
 from matplotlib import pyplot as plt
 import matplotlib as mpl
+import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
+
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import cartopy.crs as ccrs
 import cartopy
@@ -28,7 +30,7 @@ from oceancolor.ph import pigments
 from oceancolor.hydrolight import loisel23
 from oceancolor.tara import io as tara_io
 
-from ihop.iops import io as ihop_iop_io
+#from ihop.iops import io as ihop_iop_io
 
 from cnmf import io as cnmf_io
 from cnmf import stats as cnmf_stats
@@ -154,7 +156,7 @@ def fig_examples(outfile='fig_examples.png',
 # #############################################
 def fig_l23_pca_nmf_var(
     outfile='fig_l23_pca_nmf_var.png',
-    show_spec:bool=False, show_RMSE:bool=False,
+    decimal:bool=False,
     nmf_fit:str='L23'):
 
     # Load up
@@ -205,6 +207,15 @@ def fig_l23_pca_nmf_var(
     ax.set_ylim(1e-5, 0.01)
     ax.set_yscale('log')
     ax.legend(fontsize=15)
+
+    # Decimal?
+    if decimal:
+        # Function to format ticks as decimals
+        def decimal_formatter(x, p):
+            return f"{x:.8f}".rstrip('0').rstrip('.')
+        # Apply the formatter to the y-axis
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(decimal_formatter))
+    
 
     # Grid
     ax.grid(True)
@@ -1623,17 +1634,20 @@ def fig_H3_combined(outfile='fig_H3_combined.png'):
     # #############################################
     ax_spec = plt.subplot(gs[0])
 
-    ax_spec.plot(d['wave'], d['spec'][high_idx])
+    ax_spec.plot(d['wave'], d['spec'][high_idx], 'k-', label='data')
     model = np.zeros_like(d['wave'])
+    # Fuss with colors
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    ax_spec.set_prop_cycle(plt.cycler('color', colors[1:]))  # Start from index 2
     # Break it down
     for ss in range(d['M'].shape[0]):
         ax_spec.plot(d['wave'], d['M'][ss]*d['coeff'][high_idx][ss], 
             label=r'$H_'+f'{ss+1}: {d["coeff"][high_idx][ss]:0.2f}'+'$', ls=':')
         #
         model += d['M'][ss]*d['coeff'][high_idx][ss]
-    ax_spec.plot(d['wave'], model, 'k:', label='Total')
+    ax_spec.plot(d['wave'], model, 'b', label='model')
+    # Repeated to make the colors work
     ax_spec.legend(fontsize=14)
-    #
     ax_spec.set_xlabel('Wavelength (nm)')
     ax_spec.set_ylabel(r'$a_{\rm p}(\lambda) \; [\rm m^{-1}]$')
 
@@ -2049,7 +2063,8 @@ def fig_bricaud_rmse():
 
     plotting.set_fontsize(ax, 17)
 
-    ax.legend(fontsize=15)
+    ax.legend(fontsize=15, markerscale=5.,
+              handletextpad=0.2)
 
     # Finish
     plt.tight_layout()#pad=0.0, h_pad=0.0, w_pad=0.3)
@@ -2072,7 +2087,7 @@ def main(flg):
 
     # PCA vs NMF explained variance on L23
     if flg & (2**1):
-        fig_l23_pca_nmf_var()
+        fig_l23_pca_nmf_var(decimal=True)
 
     # L23: PCA and NMF basis functions
     if flg & (2**2):
@@ -2173,15 +2188,15 @@ def main(flg):
         fig_H24_vs_aph()
     
     # Fit W2 or W4
-    if flg & (2**20):
-        #fig_fit_W2(nmf_fit='L23', chl_min=460.)
-        fig_fit_W2(nmf_fit='Tara', chl_min=460.)
-
-    # Fit W2 or W4
-    if flg & (2**21):
-        #fig_fit_W4(nmf_fit='L23', chl_min=440.)
-        fig_fit_W4(nmf_fit='Tara', chl_min=440.)
-
+    #if flg & (2**20):
+    #    #fig_fit_W2(nmf_fit='L23', chl_min=460.)
+    #    fig_fit_W2(nmf_fit='Tara', chl_min=460.)
+#
+#    # Fit W2 or W4
+#    if flg & (2**21):
+#        #fig_fit_W4(nmf_fit='L23', chl_min=440.)
+#        fig_fit_W4(nmf_fit='Tara', chl_min=440.)
+#
     # Tara Chl
     if flg & (2**82):
         fig_tara_chl_W()
@@ -2249,7 +2264,7 @@ if __name__ == '__main__':
         # Appendix
         #flg += 2 ** 20  # aph NMF
         #flg += 2 ** 21  # aph fits
-        #flg += 2 ** 22  # aph RMSE
+        flg += 2 ** 22  # aph RMSE
 
         #flg += 2 ** XX  # 64 -- Fit l23 basis functions
 
