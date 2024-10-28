@@ -17,6 +17,8 @@ from ihop.iops import pca as ihop_pca
 from oceancolor.hydrolight import loisel23 
 from oceancolor.water import absorption 
 from oceancolor.ph import absorption as ph_absorption
+from oceancolor.tara import io as tara_io
+from oceancolor.utils import cat_utils
 
 
 from cnmf.oceanography import iops
@@ -326,16 +328,43 @@ def fit_aph_with_bricaud(fit_wave, aph, sigma, L23_A=None, L23_E=None):
     # Return
     return ans, cov
 
+def fit_H2_vs_LH(N_NMF:int=4):
+
+    print("Loading Tara..")
+    tara_db = tara_io.load_pg_db(expedition='Microbiome')
+
+    # Load Tara
+    d_tara = cnmf_io.load_nmf('Tara', N_NMF, 'a')
+    tara_coeff = d_tara['coeff']
+    NMF_chl = tara_coeff[:,1] 
+
+    # Grab by ID
+    midx = cat_utils.match_ids(d_tara['UID'], tara_db.uid.values)
+    Tara_chlA = tara_db.Chl_lineheight.values[midx]
+    keep = (Tara_chlA > 0.01) & (NMF_chl > 0.01)
+
+    # Fit in log
+    p = np.polyfit(np.log10(NMF_chl[keep]), np.log10(Tara_chlA[keep]), 1)
+
+    # Calculate MAE
+    log_calc_LH = p[0]*np.log10(NMF_chl[keep]) + p[1]
+    abs_error = np.abs(Tara_chlA[keep] - 10**log_calc_LH)
+    rel_error = abs_error / Tara_chlA[keep]
+    mae = np.median(rel_error)
+    
+    embed(header='nmfI_analysis 348')
+
+
 if __name__ == '__main__':
 
 
 
     # NMF on L23
     #for n in [3]:
-    for n in range(1,10):
-        #loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+    #for n in range(1,10):
+    #    loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, clobber=True)
         #loisel23_components('bb', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
-        loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+        #loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
         # Lower sigma
         #loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, sigma=0.005,
         #                    prefix_outfile='LOW')
@@ -379,3 +408,6 @@ if __name__ == '__main__':
 
     # Bricaud aph
     #fit_rmse_aph()
+
+    # Fit H2 vs LH
+    fit_H2_vs_LH()

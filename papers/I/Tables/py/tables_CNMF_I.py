@@ -34,10 +34,11 @@ def mktab_coeffs(dataset:str, outroot='tab_coeffs',
     #tbfil.write('\\clearpage\n')
     tbfil.write('\\begin{table*}\n')
     tbfil.write('\\centering\n')
-    tbfil.write('\\caption{'+f'Derived Non-Negative Matrix Factorization Coefficients for the absorption coefficient spectra of the {dataset}'\
+    wtype = 'non-water' if dataset == 'L23' else 'particulate'
+    tbfil.write('\\caption{'+f'Derived Non-Negative Matrix Factorization Coefficients for the {wtype} absorption coefficient spectra of the {dataset}'\
         ' dataset.  ')
     if dataset == 'L23':
-        tbfil.write('The index is the row number for the dataset. ')
+        tbfil.write('The index is the row number for the L23 dataset. ')
     else:
         tbfil.write('The UID refers to the Unix time stamp (in nanoseconds) of the observation.')
     tbfil.write('\\label{tab:'+f'{dataset}'+'}}\n')
