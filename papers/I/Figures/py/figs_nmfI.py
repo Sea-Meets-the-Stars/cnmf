@@ -1985,8 +1985,14 @@ def fig_outliers(items:list=[(2298, 'L23'),
         d = data[dataset]
         recon = data[f'recon_{dataset}']
 
+        if dataset == 'Tara':
+            cidx = d['UID'][idx]
+            clbl = 'UID'
+        else:
+            cidx = idx
+            clbl = 'index'
         ax.plot(d['wave'], d['spec'][idx], 'k', 
-                label=f'{dataset}: i={idx}')
+                label=f'{dataset}: {clbl}={cidx}')
         #ax.plot(d['wave'], d['spec'][idx2], 'k', label='data2', ls='--')
         lbl = 'model' if tt == 0 else None
         ax.plot(d['wave'], recon[idx], label=lbl)
@@ -2264,7 +2270,7 @@ if __name__ == '__main__':
         # Appendix
         #flg += 2 ** 20  # aph NMF
         #flg += 2 ** 21  # aph fits
-        flg += 2 ** 22  # aph RMSE
+        #flg += 2 ** 22  # aph RMSE
 
         #flg += 2 ** XX  # 64 -- Fit l23 basis functions
 
