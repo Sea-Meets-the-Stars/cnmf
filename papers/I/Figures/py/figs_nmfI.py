@@ -1,6 +1,7 @@
 """ Figuers for the NMF paper"""
 
 import os
+import sys
 from importlib import resources
 
 import numpy as np
@@ -29,6 +30,7 @@ from oceancolor.iop import cdom
 from oceancolor.ph import pigments
 from oceancolor.hydrolight import loisel23
 from oceancolor.tara import io as tara_io
+from oceancolor.ph import absorption as ph_absorption
 
 #from ihop.iops import io as ihop_iop_io
 
@@ -36,6 +38,10 @@ from cnmf import io as cnmf_io
 from cnmf import stats as cnmf_stats
 
 from IPython import embed
+
+# Local
+sys.path.append(os.path.abspath("../Analysis/py"))
+import nmfI_analysis
 
 pca_path = os.path.join(resources.files('cnmf'),
                             'data', 'L23')
@@ -76,7 +82,8 @@ def fig_examples(outfile='fig_examples.png',
 
     sns.histplot(data=d_440, x='a440', hue='Sample', ax=ax_440, stat='density', 
                  common_norm=False, log_scale=True)#, bins=20)
-    ax_440.set_xlabel(r'$a_{440}$ (m$^{-1}$)')
+    #ax_440.set_xlabel(r'$a_{440}$ (m$^{-1}$)')
+    ax_440.set_xlabel(r'$a_{\rm nw,440}$ [L23] or $a_{\rm p,440}$ [Tara] (m$^{-1}$)')
 
     # Add a a675 histogram
     ax_675 = plt.subplot(gs[3])
@@ -93,7 +100,7 @@ def fig_examples(outfile='fig_examples.png',
 
     sns.histplot(data=d_675, x='a675', hue='Sample', ax=ax_675, stat='density',
                     common_norm=False, log_scale=True)#, bins=20)
-    ax_675.set_xlabel(r'$a_{675}$ (m$^{-1}$)')
+    ax_675.set_xlabel(r'$a_{\rm nw,675}$ [L23] or $a_{\rm p,675}$ [Tara] (m$^{-1}$)')
 
     # Tick marks on the top
     for ax in [ax_440, ax_675]:
@@ -430,14 +437,15 @@ def fig_aph_fits(outfile:str='fig_aph_fits.png',
         ax.spines['top'].set_linewidth(2)
 
         # Plot aph
-        ax.plot(fit_wave, i_aph, 'ko', label=f'L23: idx={idx}', lw=2, zorder=1)
+        ax.plot(fit_wave, i_aph, 'ko', label=f'L23: index={idx}', 
+                lw=2, zorder=1)
 
         # Fit
         ans, cov = nmfI_analysis.fit_aph_with_bricaud(
             fit_wave, i_aph, sigma, L23_A=L23_A, L23_E=L23_E)
         b_model = nmfI_analysis.bricaud_func(fit_wave, ans[0],
                                              L23_A, L23_E)
-        ax.plot(fit_wave, b_model, 'g-', label='Bricaud', lw=2)
+        ax.plot(fit_wave, b_model, '-', color='orange', label='Bricaud', lw=2)
 
         # NMF
         ax.plot(wave, recon[idx], 'b-', label='NMF', lw=2)
@@ -2269,7 +2277,7 @@ if __name__ == '__main__':
 
         # Appendix
         #flg += 2 ** 20  # aph NMF
-        #flg += 2 ** 21  # aph fits
+        flg += 2 ** 21  # aph fits
         #flg += 2 ** 22  # aph RMSE
 
         #flg += 2 ** XX  # 64 -- Fit l23 basis functions

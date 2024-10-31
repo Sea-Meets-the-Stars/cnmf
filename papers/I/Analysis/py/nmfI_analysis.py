@@ -350,7 +350,7 @@ def fit_H2_vs_LH(N_NMF:int=4):
     log_calc_LH = p[0]*np.log10(NMF_chl[keep]) + p[1]
     abs_error = np.abs(Tara_chlA[keep] - 10**log_calc_LH)
     rel_error = abs_error / Tara_chlA[keep]
-    mae = np.median(rel_error)
+    mae = np.mean(rel_error)
     
     embed(header='nmfI_analysis 348')
 
