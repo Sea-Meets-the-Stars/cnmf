@@ -425,17 +425,17 @@ if __name__ == '__main__':
     #                          pca_path=pca_path, outroot=outroot)
     l23_pca(Ncomp=4, clobber=True)
     l23_pca(Ncomp=20, clobber=True)
-    '''
 
     # L23 PCA on Tara
     l23_on_tara(decomp='PCA')
 
-    '''
+    
     # L23 NMF on Tara
-    l23_on_tara(skip_save=True)#cut=40000)
+    l23_on_tara()#skip_save=True)#cut=40000)
 
 
 
+    '''
     # NMF on Tara alone
     for n in [3,4]:
         # Do it
@@ -448,7 +448,7 @@ if __name__ == '__main__':
         # 3: Explained variance: 0.9975242528085961
         # 4: Explained variance: 0.9990660778255239
     #tara_components('a', N_NMF=10)
-    '''
+
 
     # Bricaud aph
     #fit_rmse_aph()
