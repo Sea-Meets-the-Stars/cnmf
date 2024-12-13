@@ -113,10 +113,10 @@ def l23_pca(X:int=4, Y:int=0, Ncomp:int=3, clobber:bool=False):
     # Loop on IOPs
     for iop in ['a', 'b', 'bb']:
         # Outfile
-        outfile = ihop_io.loisel23_filename(
-            'PCA', iop, Ncomp, X, Y, d_path=pca_path)
+        #outfile = ihop_io.loisel23_filename(
+        #    'PCA', iop, Ncomp, X, Y, d_path=pca_path)
         outfile = cnmf_io.pcanmf_filename(f'L23', 'PCA', 
-                                          N_NMF=N_NMF, 
+                                          N_NMF=Ncomp, 
                                           iop=iop)
         # Cut on wavelength?
         data = ds[iop].data
@@ -158,8 +158,12 @@ def l23_on_tara(sig:float=0.0005,
     M = d['M']
     coeff = d['coeff']
     wave = d['wave']
-    L23_pca_N20 = ihop_pca.load('pca_L23_X4Y0_a_N4.npz',
-                                pca_path=pca_path)
+
+    # Load PCA
+    #L23_pca_N20 = ihop_io.load('pca_L23_X4Y0_a_N4.npz',
+    #                            pca_path=pca_path)
+    L23_pca = cnmf_io.load_nmf(nmf_fit, N_NMF, iop,
+                                decomp='PCA')
 
     # Calculate Tara
     wv_grid, final_tara, tara_UIDs, l23_a = iops.tara_matched_to_l23(
@@ -177,7 +181,6 @@ def l23_on_tara(sig:float=0.0005,
     V = np.ones_like(final_tara) / sig**2
     M_tara = M[:,i0:i1+1]
 
-    embed(header='127 of nmfI_analysis')
     if decomp == 'NMF':
         # Build it up one component at a time
         H_tmp = None
@@ -204,23 +207,25 @@ def l23_on_tara(sig:float=0.0005,
         outfile = cnmf_io.pcanmf_filename('Tara_L23', 'NMF', N_NMF, iop=iop)
     elif decomp == 'PCA':
         # Init the PCA
-        pca = sklearn.decomposition.PCA(n_components=L23_pca_N20['M'].shape[0])
-        pca.components_ = L23_pca_N20['M']
-        pca.mean_ = L23_pca_N20['mean']
+        pca = sklearn.decomposition.PCA(n_components=L23_pca['M'].shape[0])
+        pca.components_ = L23_pca['M']
+        pca.mean_ = L23_pca['mean']
+        pca.explained_variance_ = None
         # Apply
         save_coeff = pca.transform(final_tara)
-        save_M = L23_pca_N20['M']
+        save_M = L23_pca['M']
         outfile = cnmf_io.pcanmf_filename('Tara_L23', 'PCA', N_NMF, iop=iop)
     else:
         raise ValueError(f"Unknown decomp: {decomp}")
 
     # Variance 
-    X = final_tara
-    X_est = np.dot(save_M.T, save_coeff).T
-    V_true = np.sum(np.std(X, axis=0)**2)
-    V_est = np.sum(np.std(X-X_est, axis=0)**2)
+    if decomp == 'NMF':
+        X = final_tara
+        X_est = np.dot(save_M.T, save_coeff).T
+        V_true = np.sum(np.std(X, axis=0)**2)
+        V_est = np.sum(np.std(X-X_est, axis=0)**2)
 
-    evar = 1 - V_est/V_true
+        evar = 1 - V_est/V_true
 
     # Save
     if not skip_save:
@@ -410,7 +415,6 @@ if __name__ == '__main__':
         loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, sigma=0.005,
                             prefix_outfile='LOW')
 
-    '''
 
     # PCA on L23
     #ihop_pca.generate_l23_pca(clobber=True, Ncomp=20, X=4, Y=0,
@@ -421,9 +425,10 @@ if __name__ == '__main__':
     #                          pca_path=pca_path, outroot=outroot)
     l23_pca(Ncomp=4, clobber=True)
     l23_pca(Ncomp=20, clobber=True)
+    '''
 
     # L23 PCA on Tara
-    #l23_on_tara(decomp='PCA')
+    l23_on_tara(decomp='PCA')
 
     '''
     # L23 NMF on Tara
