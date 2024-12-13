@@ -12,13 +12,15 @@ import sklearn
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
-from ihop.iops import pca as ihop_pca
+#from ihop.iops import pca as ihop_pca
+from ihop.iops import decompose
+from ihop.iops import io as ihop_io
 
-from oceancolor.hydrolight import loisel23 
-from oceancolor.water import absorption 
-from oceancolor.ph import absorption as ph_absorption
-from oceancolor.tara import io as tara_io
-from oceancolor.utils import cat_utils
+from ocpy.hydrolight import loisel23 
+from ocpy.water import absorption 
+from ocpy.ph import absorption as ph_absorption
+from ocpy.tara import io as tara_io
+from ocpy.utils import cat_utils
 
 
 from cnmf.oceanography import iops
@@ -101,6 +103,44 @@ def loisel23_components(iop:str, N_NMF:int=10,
 
     print(f'Wrote: {outfile}')
 
+def l23_pca(X:int=4, Y:int=0, Ncomp:int=3, clobber:bool=False):
+
+
+    # Load up the data
+    ds = loisel23.load_ds(X, Y)
+
+
+    # Loop on IOPs
+    for iop in ['a', 'b', 'bb']:
+        # Outfile
+        outfile = ihop_io.loisel23_filename(
+            'PCA', iop, Ncomp, X, Y, d_path=pca_path)
+        outfile = cnmf_io.pcanmf_filename(f'L23', 'PCA', 
+                                          N_NMF=N_NMF, 
+                                          iop=iop)
+        # Cut on wavelength?
+        data = ds[iop].data
+        gd_wv = np.ones_like(ds.Lambda.data, dtype=bool)
+        if min_wv is not None:
+            gd_wv = gd_wv & (ds.Lambda.data >= min_wv)
+        if high_cut is not None:
+            gd_wv = gd_wv & (ds.Lambda.data <= high_cut)
+
+        # Do it
+        #if not os.path.exists(outfile) or clobber:
+        #    pca.fit_normal(data[:,gd_wv], Ncomp, save_outputs=outfile,
+        #                  extra_arrays={'Rs':ds.Rrs.data[:,gd_wv],
+        #                                 'wavelength':ds.Lambda.data[gd_wv]})
+
+    
+        decompose.generate_pca(
+                data[:,gd_wv], outfile, Ncomp,
+                clobber=True) 
+                #extra_arrays={'Rs':ds.Rrs.data[:,gd_wv],
+                #                         'wavelength':ds.Lambda.data[gd_wv]})
+                #                         'wavelength':ds.Lambda.data[gd_wv]})
+
+    
 def l23_on_tara(sig:float=0.0005,
                     cut:int=None, skip_save:bool=False,
                     decomp:str='NMF'):
@@ -359,39 +399,38 @@ if __name__ == '__main__':
 
 
 
+    '''
     # NMF on L23
     #for n in [3]:
-    #for n in range(1,10):
-    #    loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, clobber=True)
-        #loisel23_components('bb', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
-        #loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+    for n in range(1,10):
+        loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, clobber=True)
+        loisel23_components('bb', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+        loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
         # Lower sigma
-        #loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, sigma=0.005,
-        #                    prefix_outfile='LOW')
+        loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, sigma=0.005,
+                            prefix_outfile='LOW')
 
     '''
+
     # PCA on L23
-    pca_path = os.path.join(resources.files('cnmf'),
-                            'data', 'L23')
-    outroot = 'pca_L23'
     #ihop_pca.generate_l23_pca(clobber=True, Ncomp=20, X=4, Y=0,
     #                          min_wv=min_wv, high_cut=high_cut,
     #                          pca_path=pca_path, outroot=outroot)
     #ihop_pca.generate_l23_pca(clobber=True, Ncomp=4, X=4, Y=0,
     #                          min_wv=min_wv, high_cut=high_cut,
     #                          pca_path=pca_path, outroot=outroot)
-    ihop_pca.generate_l23_pca(clobber=True, Ncomp=3, X=4, Y=0,
-                              min_wv=min_wv, high_cut=high_cut,
-                              pca_path=pca_path, outroot=outroot)
+    l23_pca(Ncomp=4, clobber=True)
+    l23_pca(Ncomp=20, clobber=True)
 
     # L23 PCA on Tara
-    l23_on_tara(decomp='PCA')
+    #l23_on_tara(decomp='PCA')
 
+    '''
     # L23 NMF on Tara
-    #l23_on_tara(skip_save=True)#cut=40000)
-    '''
+    l23_on_tara(skip_save=True)#cut=40000)
 
-    '''
+
+
     # NMF on Tara alone
     for n in [3,4]:
         # Do it
@@ -410,4 +449,4 @@ if __name__ == '__main__':
     #fit_rmse_aph()
 
     # Fit H2 vs LH
-    fit_H2_vs_LH()
+    #fit_H2_vs_LH()

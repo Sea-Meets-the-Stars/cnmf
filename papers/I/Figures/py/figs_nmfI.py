@@ -24,13 +24,13 @@ mpl.rcParams['font.family'] = 'stixgeneral'
 
 import corner
 
-from oceancolor.utils import plotting 
-from oceancolor.utils import cat_utils
-from oceancolor.iop import cdom
-from oceancolor.ph import pigments
-from oceancolor.hydrolight import loisel23
-from oceancolor.tara import io as tara_io
-from oceancolor.ph import absorption as ph_absorption
+from ocpy.utils import plotting 
+from ocpy.utils import cat_utils
+from ocpy.iop import cdom
+from ocpy.ph import pigments
+from ocpy.hydrolight import loisel23
+from ocpy.tara import io as tara_io
+from ocpy.ph import absorption as ph_absorption
 
 #from ihop.iops import io as ihop_iop_io
 
