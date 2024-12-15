@@ -115,7 +115,7 @@ def l23_pca(X:int=4, Y:int=0, Ncomp:int=3, clobber:bool=False):
         # Outfile
         #outfile = ihop_io.loisel23_filename(
         #    'PCA', iop, Ncomp, X, Y, d_path=pca_path)
-        outfile = cnmf_io.pcanmf_filename(f'L23', 'PCA', 
+        outfile = cnmf_io.pcanmf_filename('L23', 'PCA', 
                                           N_NMF=Ncomp, 
                                           iop=iop)
         # Cut on wavelength?
@@ -135,9 +135,8 @@ def l23_pca(X:int=4, Y:int=0, Ncomp:int=3, clobber:bool=False):
     
         decompose.generate_pca(
                 data[:,gd_wv], outfile, Ncomp,
-                clobber=True) 
-                #extra_arrays={'Rs':ds.Rrs.data[:,gd_wv],
-                #                         'wavelength':ds.Lambda.data[gd_wv]})
+                clobber=True, 
+                extras={'wavelength':ds.Lambda.data[gd_wv]})
                 #                         'wavelength':ds.Lambda.data[gd_wv]})
 
     
@@ -416,6 +415,8 @@ if __name__ == '__main__':
                             prefix_outfile='LOW')
 
 
+    '''
+
     # PCA on L23
     #ihop_pca.generate_l23_pca(clobber=True, Ncomp=20, X=4, Y=0,
     #                          min_wv=min_wv, high_cut=high_cut,
@@ -430,12 +431,12 @@ if __name__ == '__main__':
     l23_on_tara(decomp='PCA')
 
     
+    '''
     # L23 NMF on Tara
     l23_on_tara()#skip_save=True)#cut=40000)
 
 
 
-    '''
     # NMF on Tara alone
     for n in [3,4]:
         # Do it
@@ -448,6 +449,7 @@ if __name__ == '__main__':
         # 3: Explained variance: 0.9975242528085961
         # 4: Explained variance: 0.9990660778255239
     #tara_components('a', N_NMF=10)
+    '''
 
 
     # Bricaud aph

@@ -168,7 +168,7 @@ def fig_l23_pca_nmf_var(
 
     # Load up
     if nmf_fit == 'L23':
-        pca_N20 = np.load(os.path.join(pca_path,'pca_L23_X4Y0_a_N20.npz'))
+        pca_N20 = cnmf_io.load_nmf('L23', 20, 'a', decomp='PCA')
         #pca_N20 = ihop_pca.load('pca_L23_X4Y0_Tara_a_N20.npz')
     #L23_Tara_pca = ihop_pca.load(f'pca_L23_X4Y0_Tara_a_N{N}.npz')
     #wave = L23_pca_N20['wavelength']
@@ -264,9 +264,10 @@ def fig_nmf_pca_basis(outfile:str='fig_nmf_pca_basis.png',
         if ss == 0:
             #ab, Rs, d, d_bb = ihop_pca.load_loisel_2023_pca(
             #    N_PCA=Ncomp, l23_path=pca_path)
-            ab, Rs, d, d_bb = ihop_iop_io.load_loisel2023_decomp(
-                ('pca', 'pca'), (Ncomp, Ncomp), 4, 0)
-            
+            #ab, Rs, d, d_bb = ihop_iop_io.load_loisel2023_decomp(
+            #    ('pca', 'pca'), (Ncomp, Ncomp), 4, 0)
+            d = cnmf_io.load_nmf('L23', 4, 'a', decomp='PCA')
+            #embed(header='271 of figs')
             wave = d['wavelength']
         elif ss == 1:
             d = cnmf_io.load_nmf(nmf_fit, Ncomp, iop)
@@ -2105,12 +2106,12 @@ def main(flg):
 
     # L23: PCA and NMF basis functions
     if flg & (2**2):
-        #fig_nmf_pca_basis()
+        fig_nmf_pca_basis()
         #fig_nmf_pca_basis(Ncomp=3,
         #                  outfile='fig_nmf_pca_basis_N3.png')
-        fig_nmf_pca_basis(outfile='fig_nmf_pca_basis_aph.png',
-                          iop='aph', Ncomp=3,
-                          skip_pca=True)
+        #fig_nmf_pca_basis(outfile='fig_nmf_pca_basis_aph.png',
+        #                  iop='aph', Ncomp=3,
+        #                  skip_pca=True)
 
     # Individual
     if flg & (2**3):
@@ -2264,7 +2265,7 @@ if __name__ == '__main__':
         flg = 0
         #flg += 2 ** 0  # 1 -- Figure 1 Example spectra
         #flg += 2 ** 1  # 2 -- Figure 2 L23: PCA vs NMF Explained variance
-        #flg += 2 ** 2  # 4 -- Figure 3 L23: PCA and NMF basis
+        flg += 2 ** 2  # 4 -- Figure 3 L23: PCA and NMF basis
         #flg += 2 ** 3  # 8 --  Figure 4: Example fits of L23
         #flg += 2 ** 4  # 16 -- Figure 5: L23,Tara compare NMF basis functions
         #flg += 2 ** 5  # 32 -- Figure 6a: Fit to W1
@@ -2277,7 +2278,7 @@ if __name__ == '__main__':
 
         # Appendix
         #flg += 2 ** 20  # aph NMF
-        flg += 2 ** 21  # aph fits
+        #flg += 2 ** 21  # aph fits
         #flg += 2 ** 22  # aph RMSE
 
         #flg += 2 ** XX  # 64 -- Fit l23 basis functions
