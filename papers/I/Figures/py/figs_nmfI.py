@@ -114,7 +114,7 @@ def fig_examples(outfile='fig_examples.png',
     ax_spec.grid(True)
 
     # Tara spectra
-    for ss, a440 in enumerate([6e-3, 2e-2]):
+    for ss, a440 in enumerate([7e-3, 2e-2]):
         ls = '-' if ss == 0 else ':'
         it_0 = np.argmin(np.abs(d_tara['spec'][:,i440_tara] - a440))
         # Normalize?
@@ -1656,9 +1656,11 @@ def fig_H3_combined(outfile='fig_H3_combined.png'):
         model += d['M'][ss]*d['coeff'][high_idx][ss]
     ax_spec.plot(d['wave'], model, 'b', label='model')
     # Repeated to make the colors work
-    ax_spec.legend(fontsize=14)
+    ax_spec.legend(fontsize=13, loc='upper right')
     ax_spec.set_xlabel('Wavelength (nm)')
     ax_spec.set_ylabel(r'$a_{\rm p}(\lambda) \; [\rm m^{-1}]$')
+    ax_spec.set_ylim(-0.01, 0.3)
+    ax_spec.grid()
 
     plotting.set_fontsize(ax_spec, 15)
     #
@@ -1966,9 +1968,11 @@ def fig_fit_W1(N_NMF:int=4,
 
 
 def fig_outliers(items:list=[(2298, 'L23'),
-                           (120863, 'Tara'),
+                           (1635946320000000000, 'Tara'),
+                           #(120863, 'Tara'),
                            (1245, 'L23'),
-                           (105191, 'Tara'),
+                           (1615303800000000000, 'Tara'),
+                           #(105191, 'Tara'),
                            ], 
                  N_NMF:int=4,
                 outfile=f'fig_outliers.png',
@@ -1990,11 +1994,17 @@ def fig_outliers(items:list=[(2298, 'L23'),
         idx, dataset = item
         print(f'id: {idx}')
 
+
         ax= plt.subplot(gs[tt])
         d = data[dataset]
         recon = data[f'recon_{dataset}']
 
+
         if dataset == 'Tara':
+            # Grab the idx
+            idx = np.where(d['UID'] == idx)[0][0]
+
+            # Labels
             cidx = d['UID'][idx]
             clbl = 'UID'
         else:
@@ -2263,9 +2273,9 @@ if __name__ == '__main__':
 
     if len(sys.argv) == 1:
         flg = 0
-        #flg += 2 ** 0  # 1 -- Figure 1 Example spectra
+        flg += 2 ** 0  # 1 -- Figure 1 Example spectra
         #flg += 2 ** 1  # 2 -- Figure 2 L23: PCA vs NMF Explained variance
-        flg += 2 ** 2  # 4 -- Figure 3 L23: PCA and NMF basis
+        #flg += 2 ** 2  # 4 -- Figure 3 L23: PCA and NMF basis
         #flg += 2 ** 3  # 8 --  Figure 4: Example fits of L23
         #flg += 2 ** 4  # 16 -- Figure 5: L23,Tara compare NMF basis functions
         #flg += 2 ** 5  # 32 -- Figure 6a: Fit to W1
@@ -2275,9 +2285,10 @@ if __name__ == '__main__':
         #flg += 2 ** 9  # 512 -- Figure 9: Fit H2+H4
 
         #flg += 2 ** 11  # 2048 -- Figure 11: Outliers
+        #flg += 2 ** 20  # Figure 12 aph NMF
+        #flg += 2 ** 21  # aph fits
 
         # Appendix
-        #flg += 2 ** 20  # aph NMF
         #flg += 2 ** 21  # aph fits
         #flg += 2 ** 22  # aph RMSE
 
