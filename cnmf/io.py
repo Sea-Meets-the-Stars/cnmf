@@ -11,7 +11,9 @@ def pcanmf_filename(nmf_fit:str, decomp:str, N_NMF:int, iop:str=None):
 
     Parameters:
         nmf_fit (str): The name of the NMF fit.
+            Often the name of the dataset, e.g. L23 or Tara
         decomp (str): The type of decomposition.
+            PCA or NMF
         N_NMF (int): The number of NMF/PCA components.
         iop (str, optional): Additional identifier for the output file. Defaults to None.
 

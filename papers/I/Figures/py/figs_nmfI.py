@@ -1971,7 +1971,8 @@ def fig_outliers(items:list=[(2298, 'L23'),
                            (1635946320000000000, 'Tara'),
                            #(120863, 'Tara'),
                            (1245, 'L23'),
-                           (1615303800000000000, 'Tara'),
+                           (1656652860000000000, 'Tara'),
+                           #(1615303800000000000, 'Tara'),
                            #(105191, 'Tara'),
                            ], 
                  N_NMF:int=4,
@@ -2273,7 +2274,7 @@ if __name__ == '__main__':
 
     if len(sys.argv) == 1:
         flg = 0
-        flg += 2 ** 0  # 1 -- Figure 1 Example spectra
+        #flg += 2 ** 0  # 1 -- Figure 1 Example spectra
         #flg += 2 ** 1  # 2 -- Figure 2 L23: PCA vs NMF Explained variance
         #flg += 2 ** 2  # 4 -- Figure 3 L23: PCA and NMF basis
         #flg += 2 ** 3  # 8 --  Figure 4: Example fits of L23
@@ -2284,7 +2285,7 @@ if __name__ == '__main__':
         #flg += 2 ** 8  # 256 -- Figure 8: H2 and H24
         #flg += 2 ** 9  # 512 -- Figure 9: Fit H2+H4
 
-        #flg += 2 ** 11  # 2048 -- Figure 11: Outliers
+        flg += 2 ** 11  # 2048 -- Figure 11: Outliers
         #flg += 2 ** 20  # Figure 12 aph NMF
         #flg += 2 ** 21  # aph fits
 
