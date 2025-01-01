@@ -110,8 +110,8 @@ def mktab_patrick(dataset:str='Tara', iop:str='a'):
 # Command line execution
 if __name__ == '__main__':
 
-    #mktab_coeffs('L23', sub=True)
-    #mktab_coeffs('Tara', sub=True)
+    mktab_coeffs('L23', sub=True)
+    mktab_coeffs('Tara', sub=True)
 
     # Table for Patrick
-    mktab_patrick()
+    #mktab_patrick()
