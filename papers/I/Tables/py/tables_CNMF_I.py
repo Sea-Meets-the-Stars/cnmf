@@ -97,3 +97,7 @@ if __name__ == '__main__':
 
     mktab_coeffs('L23', sub=True)
     mktab_coeffs('Tara', sub=True)
+
+    #
+    mktab_coeffs('L23', sub=False)
+    mktab_coeffs('Tara', sub=False)
