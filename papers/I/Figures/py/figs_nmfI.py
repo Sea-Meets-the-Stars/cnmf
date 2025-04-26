@@ -24,13 +24,13 @@ mpl.rcParams['font.family'] = 'stixgeneral'
 
 import corner
 
-from oceancolor.utils import plotting 
-from oceancolor.utils import cat_utils
-from oceancolor.iop import cdom
-from oceancolor.ph import pigments
-from oceancolor.hydrolight import loisel23
-from oceancolor.tara import io as tara_io
-from oceancolor.ph import absorption as ph_absorption
+from ocpy.utils import plotting 
+from ocpy.utils import cat_utils
+from ocpy.iop import cdom
+from ocpy.ph import pigments
+from ocpy.hydrolight import loisel23
+from ocpy.tara import io as tara_io
+from ocpy.ph import absorption as ph_absorption
 
 #from ihop.iops import io as ihop_iop_io
 
@@ -114,7 +114,7 @@ def fig_examples(outfile='fig_examples.png',
     ax_spec.grid(True)
 
     # Tara spectra
-    for ss, a440 in enumerate([6e-3, 2e-2]):
+    for ss, a440 in enumerate([7e-3, 2e-2]):
         ls = '-' if ss == 0 else ':'
         it_0 = np.argmin(np.abs(d_tara['spec'][:,i440_tara] - a440))
         # Normalize?
@@ -168,7 +168,7 @@ def fig_l23_pca_nmf_var(
 
     # Load up
     if nmf_fit == 'L23':
-        pca_N20 = np.load(os.path.join(pca_path,'pca_L23_X4Y0_a_N20.npz'))
+        pca_N20 = cnmf_io.load_nmf('L23', 20, 'a', decomp='PCA')
         #pca_N20 = ihop_pca.load('pca_L23_X4Y0_Tara_a_N20.npz')
     #L23_Tara_pca = ihop_pca.load(f'pca_L23_X4Y0_Tara_a_N{N}.npz')
     #wave = L23_pca_N20['wavelength']
@@ -264,9 +264,10 @@ def fig_nmf_pca_basis(outfile:str='fig_nmf_pca_basis.png',
         if ss == 0:
             #ab, Rs, d, d_bb = ihop_pca.load_loisel_2023_pca(
             #    N_PCA=Ncomp, l23_path=pca_path)
-            ab, Rs, d, d_bb = ihop_iop_io.load_loisel2023_decomp(
-                ('pca', 'pca'), (Ncomp, Ncomp), 4, 0)
-            
+            #ab, Rs, d, d_bb = ihop_iop_io.load_loisel2023_decomp(
+            #    ('pca', 'pca'), (Ncomp, Ncomp), 4, 0)
+            d = cnmf_io.load_nmf('L23', 4, 'a', decomp='PCA')
+            #embed(header='271 of figs')
             wave = d['wavelength']
         elif ss == 1:
             d = cnmf_io.load_nmf(nmf_fit, Ncomp, iop)
@@ -1655,9 +1656,11 @@ def fig_H3_combined(outfile='fig_H3_combined.png'):
         model += d['M'][ss]*d['coeff'][high_idx][ss]
     ax_spec.plot(d['wave'], model, 'b', label='model')
     # Repeated to make the colors work
-    ax_spec.legend(fontsize=14)
+    ax_spec.legend(fontsize=13, loc='upper right')
     ax_spec.set_xlabel('Wavelength (nm)')
     ax_spec.set_ylabel(r'$a_{\rm p}(\lambda) \; [\rm m^{-1}]$')
+    ax_spec.set_ylim(-0.01, 0.3)
+    ax_spec.grid()
 
     plotting.set_fontsize(ax_spec, 15)
     #
@@ -1965,9 +1968,12 @@ def fig_fit_W1(N_NMF:int=4,
 
 
 def fig_outliers(items:list=[(2298, 'L23'),
-                           (120863, 'Tara'),
+                           (1635946320000000000, 'Tara'),
+                           #(120863, 'Tara'),
                            (1245, 'L23'),
-                           (105191, 'Tara'),
+                           (1656652860000000000, 'Tara'),
+                           #(1615303800000000000, 'Tara'),
+                           #(105191, 'Tara'),
                            ], 
                  N_NMF:int=4,
                 outfile=f'fig_outliers.png',
@@ -1989,11 +1995,17 @@ def fig_outliers(items:list=[(2298, 'L23'),
         idx, dataset = item
         print(f'id: {idx}')
 
+
         ax= plt.subplot(gs[tt])
         d = data[dataset]
         recon = data[f'recon_{dataset}']
 
+
         if dataset == 'Tara':
+            # Grab the idx
+            idx = np.where(d['UID'] == idx)[0][0]
+
+            # Labels
             cidx = d['UID'][idx]
             clbl = 'UID'
         else:
@@ -2105,12 +2117,12 @@ def main(flg):
 
     # L23: PCA and NMF basis functions
     if flg & (2**2):
-        #fig_nmf_pca_basis()
+        fig_nmf_pca_basis()
         #fig_nmf_pca_basis(Ncomp=3,
         #                  outfile='fig_nmf_pca_basis_N3.png')
-        fig_nmf_pca_basis(outfile='fig_nmf_pca_basis_aph.png',
-                          iop='aph', Ncomp=3,
-                          skip_pca=True)
+        #fig_nmf_pca_basis(outfile='fig_nmf_pca_basis_aph.png',
+        #                  iop='aph', Ncomp=3,
+        #                  skip_pca=True)
 
     # Individual
     if flg & (2**3):
@@ -2273,11 +2285,12 @@ if __name__ == '__main__':
         #flg += 2 ** 8  # 256 -- Figure 8: H2 and H24
         #flg += 2 ** 9  # 512 -- Figure 9: Fit H2+H4
 
-        #flg += 2 ** 11  # 2048 -- Figure 11: Outliers
+        flg += 2 ** 11  # 2048 -- Figure 11: Outliers
+        #flg += 2 ** 20  # Figure 12 aph NMF
+        #flg += 2 ** 21  # aph fits
 
         # Appendix
-        #flg += 2 ** 20  # aph NMF
-        flg += 2 ** 21  # aph fits
+        #flg += 2 ** 21  # aph fits
         #flg += 2 ** 22  # aph RMSE
 
         #flg += 2 ** XX  # 64 -- Fit l23 basis functions

@@ -1,7 +1,7 @@
 """  Module for Tables for the CNMF paper I """
 # Imports
-import os, sys
 
+import pandas
 
 # Local
 #sys.path.append(os.path.abspath("../Analysis/py"))
@@ -90,6 +90,21 @@ def mktab_coeffs(dataset:str, outroot='tab_coeffs',
 
     print('Wrote {:s}'.format(outfile))
 
+def mktab_patrick(dataset:str='Tara', iop:str='a'):
+
+    # Load
+    N_NMF, iop = 4, 'a'
+    d = cnmf_io.load_nmf(dataset, N_NMF, iop)
+    M = d['M']
+    coeff = d['coeff']
+
+    # Generate a simple pandas DataFrame
+
+    df = pandas.DataFrame(coeff, columns=['H1', 'H2', 'H3', 'H4'])
+    df['UID'] = d['UID']
+
+    # Write
+    df.to_csv('nmf_table_for_patrick.csv', index=False)
 
 
 # Command line execution
@@ -101,3 +116,7 @@ if __name__ == '__main__':
     #
     mktab_coeffs('L23', sub=False)
     mktab_coeffs('Tara', sub=False)
+
+    # Table for Patrick
+    #mktab_patrick()
+>>>>>>> cd9490a673143a7cb7bff43482b5124272ec84cd
