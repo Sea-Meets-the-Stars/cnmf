@@ -2,12 +2,11 @@
 
 import numpy as np
 
-from oceancolor.hydrolight import loisel23
-from oceancolor.iop import cross
-from oceancolor.tara import io as tara_io
-from oceancolor.tara import spectra
-from oceancolor.utils import spectra as spec_utils
-from oceancolor import water
+from ocpy.hydrolight import loisel23
+from ocpy.tara import io as tara_io
+from ocpy.tara import spectra
+from ocpy.utils import spectra as spec_utils
+from ocpy import water
 
 from IPython import embed
 

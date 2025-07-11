@@ -12,11 +12,15 @@ import sklearn
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
-from ihop.iops import pca as ihop_pca
+#from ihop.iops import pca as ihop_pca
+from ihop.iops import decompose
+from ihop.iops import io as ihop_io
 
-from oceancolor.hydrolight import loisel23 
-from oceancolor.water import absorption 
-from oceancolor.ph import absorption as ph_absorption
+from ocpy.hydrolight import loisel23 
+from ocpy.water import absorption 
+from ocpy.ph import absorption as ph_absorption
+from ocpy.tara import io as tara_io
+from ocpy.utils import cat_utils
 
 
 from cnmf.oceanography import iops
@@ -99,6 +103,43 @@ def loisel23_components(iop:str, N_NMF:int=10,
 
     print(f'Wrote: {outfile}')
 
+def l23_pca(X:int=4, Y:int=0, Ncomp:int=3, clobber:bool=False):
+
+
+    # Load up the data
+    ds = loisel23.load_ds(X, Y)
+
+
+    # Loop on IOPs
+    for iop in ['a', 'b', 'bb']:
+        # Outfile
+        #outfile = ihop_io.loisel23_filename(
+        #    'PCA', iop, Ncomp, X, Y, d_path=pca_path)
+        outfile = cnmf_io.pcanmf_filename('L23', 'PCA', 
+                                          N_NMF=Ncomp, 
+                                          iop=iop)
+        # Cut on wavelength?
+        data = ds[iop].data
+        gd_wv = np.ones_like(ds.Lambda.data, dtype=bool)
+        if min_wv is not None:
+            gd_wv = gd_wv & (ds.Lambda.data >= min_wv)
+        if high_cut is not None:
+            gd_wv = gd_wv & (ds.Lambda.data <= high_cut)
+
+        # Do it
+        #if not os.path.exists(outfile) or clobber:
+        #    pca.fit_normal(data[:,gd_wv], Ncomp, save_outputs=outfile,
+        #                  extra_arrays={'Rs':ds.Rrs.data[:,gd_wv],
+        #                                 'wavelength':ds.Lambda.data[gd_wv]})
+
+    
+        decompose.generate_pca(
+                data[:,gd_wv], outfile, Ncomp,
+                clobber=True, 
+                extras={'wavelength':ds.Lambda.data[gd_wv]})
+                #                         'wavelength':ds.Lambda.data[gd_wv]})
+
+    
 def l23_on_tara(sig:float=0.0005,
                     cut:int=None, skip_save:bool=False,
                     decomp:str='NMF'):
@@ -116,8 +157,12 @@ def l23_on_tara(sig:float=0.0005,
     M = d['M']
     coeff = d['coeff']
     wave = d['wave']
-    L23_pca_N20 = ihop_pca.load('pca_L23_X4Y0_a_N4.npz',
-                                pca_path=pca_path)
+
+    # Load PCA
+    #L23_pca_N20 = ihop_io.load('pca_L23_X4Y0_a_N4.npz',
+    #                            pca_path=pca_path)
+    L23_pca = cnmf_io.load_nmf(nmf_fit, N_NMF, iop,
+                                decomp='PCA')
 
     # Calculate Tara
     wv_grid, final_tara, tara_UIDs, l23_a = iops.tara_matched_to_l23(
@@ -135,7 +180,6 @@ def l23_on_tara(sig:float=0.0005,
     V = np.ones_like(final_tara) / sig**2
     M_tara = M[:,i0:i1+1]
 
-    embed(header='127 of nmfI_analysis')
     if decomp == 'NMF':
         # Build it up one component at a time
         H_tmp = None
@@ -162,23 +206,25 @@ def l23_on_tara(sig:float=0.0005,
         outfile = cnmf_io.pcanmf_filename('Tara_L23', 'NMF', N_NMF, iop=iop)
     elif decomp == 'PCA':
         # Init the PCA
-        pca = sklearn.decomposition.PCA(n_components=L23_pca_N20['M'].shape[0])
-        pca.components_ = L23_pca_N20['M']
-        pca.mean_ = L23_pca_N20['mean']
+        pca = sklearn.decomposition.PCA(n_components=L23_pca['M'].shape[0])
+        pca.components_ = L23_pca['M']
+        pca.mean_ = L23_pca['mean']
+        pca.explained_variance_ = None
         # Apply
         save_coeff = pca.transform(final_tara)
-        save_M = L23_pca_N20['M']
+        save_M = L23_pca['M']
         outfile = cnmf_io.pcanmf_filename('Tara_L23', 'PCA', N_NMF, iop=iop)
     else:
         raise ValueError(f"Unknown decomp: {decomp}")
 
     # Variance 
-    X = final_tara
-    X_est = np.dot(save_M.T, save_coeff).T
-    V_true = np.sum(np.std(X, axis=0)**2)
-    V_est = np.sum(np.std(X-X_est, axis=0)**2)
+    if decomp == 'NMF':
+        X = final_tara
+        X_est = np.dot(save_M.T, save_coeff).T
+        V_true = np.sum(np.std(X, axis=0)**2)
+        V_est = np.sum(np.std(X-X_est, axis=0)**2)
 
-    evar = 1 - V_est/V_true
+        evar = 1 - V_est/V_true
 
     # Save
     if not skip_save:
@@ -326,43 +372,69 @@ def fit_aph_with_bricaud(fit_wave, aph, sigma, L23_A=None, L23_E=None):
     # Return
     return ans, cov
 
+def fit_H2_vs_LH(N_NMF:int=4):
+
+    print("Loading Tara..")
+    tara_db = tara_io.load_pg_db(expedition='Microbiome')
+
+    # Load Tara
+    d_tara = cnmf_io.load_nmf('Tara', N_NMF, 'a')
+    tara_coeff = d_tara['coeff']
+    NMF_chl = tara_coeff[:,1] 
+
+    # Grab by ID
+    midx = cat_utils.match_ids(d_tara['UID'], tara_db.uid.values)
+    Tara_chlA = tara_db.Chl_lineheight.values[midx]
+    keep = (Tara_chlA > 0.01) & (NMF_chl > 0.01)
+
+    # Fit in log
+    p = np.polyfit(np.log10(NMF_chl[keep]), np.log10(Tara_chlA[keep]), 1)
+
+    # Calculate MAE
+    log_calc_LH = p[0]*np.log10(NMF_chl[keep]) + p[1]
+    abs_error = np.abs(Tara_chlA[keep] - 10**log_calc_LH)
+    rel_error = abs_error / Tara_chlA[keep]
+    mae = np.mean(rel_error)
+    
+    embed(header='nmfI_analysis 348')
+
+
 if __name__ == '__main__':
 
 
 
+    '''
     # NMF on L23
     #for n in [3]:
     for n in range(1,10):
-        #loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
-        #loisel23_components('bb', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
+        loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, clobber=True)
+        loisel23_components('bb', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
         loisel23_components('aph', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut)
         # Lower sigma
-        #loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, sigma=0.005,
-        #                    prefix_outfile='LOW')
+        loisel23_components('a', N_NMF=n+1, min_wv=min_wv, high_cut=high_cut, sigma=0.005,
+                            prefix_outfile='LOW')
 
-    '''
+
+
     # PCA on L23
-    pca_path = os.path.join(resources.files('cnmf'),
-                            'data', 'L23')
-    outroot = 'pca_L23'
     #ihop_pca.generate_l23_pca(clobber=True, Ncomp=20, X=4, Y=0,
     #                          min_wv=min_wv, high_cut=high_cut,
     #                          pca_path=pca_path, outroot=outroot)
     #ihop_pca.generate_l23_pca(clobber=True, Ncomp=4, X=4, Y=0,
     #                          min_wv=min_wv, high_cut=high_cut,
     #                          pca_path=pca_path, outroot=outroot)
-    ihop_pca.generate_l23_pca(clobber=True, Ncomp=3, X=4, Y=0,
-                              min_wv=min_wv, high_cut=high_cut,
-                              pca_path=pca_path, outroot=outroot)
+    l23_pca(Ncomp=4, clobber=True)
+    l23_pca(Ncomp=20, clobber=True)
+    '''
 
     # L23 PCA on Tara
     l23_on_tara(decomp='PCA')
 
+    
     # L23 NMF on Tara
-    #l23_on_tara(skip_save=True)#cut=40000)
-    '''
+    l23_on_tara()#skip_save=True)#cut=40000)
 
-    '''
+
     # NMF on Tara alone
     for n in [3,4]:
         # Do it
@@ -375,7 +447,11 @@ if __name__ == '__main__':
         # 3: Explained variance: 0.9975242528085961
         # 4: Explained variance: 0.9990660778255239
     #tara_components('a', N_NMF=10)
-    '''
+
+
 
     # Bricaud aph
     #fit_rmse_aph()
+
+    # Fit H2 vs LH
+    #fit_H2_vs_LH()

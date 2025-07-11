@@ -11,8 +11,10 @@ def pcanmf_filename(nmf_fit:str, decomp:str, N_NMF:int, iop:str=None):
 
     Parameters:
         nmf_fit (str): The name of the NMF fit.
+            Often the name of the dataset, e.g. L23 or Tara
         decomp (str): The type of decomposition.
-        N_NMF (int): The number of NMF components.
+            PCA or NMF
+        N_NMF (int): The number of NMF/PCA components.
         iop (str, optional): Additional identifier for the output file. Defaults to None.
 
     Returns:
@@ -57,10 +59,10 @@ def save_nmf(outfile:str, M:np.ndarray, coeff:np.ndarray, spec:np.ndarray,
              
 
 def load_nmf(nmf_fit:str, N_NMF:int, iop:str=None,
-             filename:str=None):
+             filename:str=None, decomp:str='NMF'):
     # File name
     if filename is None:
-        filename = pcanmf_filename(nmf_fit, 'NMF', N_NMF, iop=iop)
+        filename = pcanmf_filename(nmf_fit, decomp, N_NMF, iop=iop)
 
     # Load + Return
     print(f'Loading: {filename}')
